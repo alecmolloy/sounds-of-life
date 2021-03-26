@@ -11,10 +11,8 @@ const DefaultWidth = 50
 const DefaultHeight = 50
 const DefaultCellSize = 5
 
-// TODO: keys as strings is h***** up
-// TODO: need to check the rows and columns 1 outside of the currently checked
+// TODO: infinite canvas, only render cells in frame, scrollwheel events, zoom
 // TODO: bresenhem lines between mouse moves
-// TODO: bug if you load a pattern too big for the board
 // TODO: support more RLE features, like board positioning
 // TODO: if RLE parsing is unsuccessful, make it fail gracefully
 
@@ -104,6 +102,7 @@ export const SoundsOfLife = () => {
               setLive={setLive}
               speed={speed}
               setSpeed={setSpeed}
+              cellSize={cellSize}
             />
           ) : null}
         </div>

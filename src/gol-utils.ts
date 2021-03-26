@@ -3,18 +3,6 @@ import { Map } from 'immutable'
 
 export const emptyGrid = (): Grid => Map()
 
-// export const soup = (width: number, height: number): Grid =>
-//   Map({
-//     ...new Array(height)
-//       .fill(
-//         Map({
-//           ...new Array(width).fill(false),
-//         }),
-//       )
-//       // why is this row an `any`?
-//       .map((row) => row.map(() => Math.random() >= 0.5)),
-//   })
-
 export const blinker = (): Grid =>
   emptyGrid().setIn([1], Map({ 1: true, 2: true, 3: true }))
 
@@ -44,4 +32,21 @@ export const setDeeply = (
       return grid
     }
   }
+}
+
+export const soup = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Grid => {
+  let workingGrid = emptyGrid()
+  for (let xi = x; xi <= width; xi++) {
+    for (let yi = y; yi <= height; yi++) {
+      if (Math.random() >= 0.5) {
+        workingGrid = setDeeply(xi, yi, true, workingGrid)
+      }
+    }
+  }
+  return workingGrid
 }

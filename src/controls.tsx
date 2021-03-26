@@ -14,6 +14,7 @@ interface ControlsProps {
   speed: number
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   count: number
+  cellSize: number
 }
 export const Controls = ({
   runGeneration,
@@ -23,6 +24,7 @@ export const Controls = ({
   speed,
   setSpeed,
   count,
+  cellSize,
 }: ControlsProps) => {
   const onGenerateClick = React.useCallback(() => {
     runGeneration()
@@ -33,8 +35,15 @@ export const Controls = ({
   }, [setGrid])
 
   const onSoupClick = React.useCallback(() => {
-    setGrid(soup(500, 500))
-  }, [setGrid])
+    setGrid(
+      soup(
+        0,
+        0,
+        window.innerWidth / cellSize,
+        window.innerHeight / cellSize,
+      ),
+    )
+  }, [setGrid, cellSize])
 
   const onBlinkerClick = React.useCallback(() => {
     setGrid(blinker())
