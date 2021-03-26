@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Grid } from './game-of-life'
-import { emptyBoard, soup, blinker } from './gol-utils'
+import { emptyGrid, soup, blinker } from './gol-utils'
 
 interface ControlsProps {
   runGeneration: () => void
@@ -13,34 +13,32 @@ interface ControlsProps {
   setLive: React.Dispatch<React.SetStateAction<boolean>>
   speed: number
   setSpeed: React.Dispatch<React.SetStateAction<number>>
+  count: number
 }
 export const Controls = ({
   runGeneration,
   setGrid,
-  width,
-  setWidth,
-  height,
-  setHeight,
   live,
   setLive,
   speed,
   setSpeed,
+  count,
 }: ControlsProps) => {
   const onGenerateClick = React.useCallback(() => {
     runGeneration()
   }, [runGeneration])
 
   const onClearClick = React.useCallback(() => {
-    setGrid(emptyBoard(width, height))
-  }, [setGrid, width, height])
+    setGrid(emptyGrid())
+  }, [setGrid])
 
   const onSoupClick = React.useCallback(() => {
-    setGrid(soup(width, height))
-  }, [setGrid, width, height])
+    setGrid(soup(500, 500))
+  }, [setGrid])
 
   const onBlinkerClick = React.useCallback(() => {
-    setGrid(blinker(width, height))
-  }, [setGrid, width, height])
+    setGrid(blinker())
+  }, [setGrid])
 
   const onRunClick = React.useCallback(() => {
     setLive((v) => !v)
@@ -57,7 +55,17 @@ export const Controls = ({
   )
 
   return (
-    <div id='controls'>
+    <div
+      id='controls'
+      style={{
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        backgroundColor: '#fff2',
+        padding: 10,
+        color: 'white',
+      }}
+    >
       <div>
         <button
           style={{ marginRight: '1em' }}
@@ -66,10 +74,7 @@ export const Controls = ({
         >
           Generate
         </button>
-        <button
-          style={{ marginRight: '1em' }}
-          onClick={onRunClick}
-        >
+        <button style={{ marginRight: '1em' }} onClick={onRunClick}>
           {live ? 'Pause' : 'Run'}
         </button>
         Speed (ms):
@@ -81,16 +86,10 @@ export const Controls = ({
         />
       </div>
       <div style={{ marginTop: '1em' }}>
-        <button
-          style={{ marginRight: '1em' }}
-          onClick={onClearClick}
-        >
+        <button style={{ marginRight: '1em' }} onClick={onClearClick}>
           Clear
         </button>
-        <button
-          style={{ marginRight: '1em' }}
-          onClick={onSoupClick}
-        >
+        <button style={{ marginRight: '1em' }} onClick={onSoupClick}>
           Random Soup
         </button>
         <button
@@ -99,6 +98,7 @@ export const Controls = ({
         >
           Blinker
         </button>
+        Count: {count}
       </div>
     </div>
   )

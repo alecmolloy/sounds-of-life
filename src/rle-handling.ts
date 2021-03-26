@@ -3,15 +3,14 @@
 
 // @ts-ignore
 import * as parser from './scripts/rle-parser'
-import type { List } from 'immutable'
-import { emptyBoardArray } from './gol-utils'
-import * as Immutable from 'immutable'
+import { Grid } from './game-of-life'
+import { Map } from 'immutable'
 
 export const getBoardFromRLE = (
   rleText: string,
   width: number,
   height: number,
-): List<List<boolean>> | null => {
+): Grid | null => {
   const parsed = parser.parse(rleText)
   if (Array.isArray(parsed)) {
     const parsedGOLLines = parsed.find(
@@ -20,19 +19,31 @@ export const getBoardFromRLE = (
     if (parsedGOLLines != null) {
       const lines: Array<Array<[number, 'b' | 'o']>> =
         parsedGOLLines.items
-      const board = emptyBoardArray(width, height)
+      let workingBoard: Grid = Map({
+        ...new Array(height).fill(
+          Map({
+            ...new Array(width).fill(false),
+          }),
+        ),
+      })
+
       lines.forEach((row, y) => {
         let xIndex = 0
         row.forEach((cell) => {
           const count = cell[0]
           const value = cell[1] === 'o'
           for (let i = 0; i < count; i++) {
-            board[y][xIndex] = value
+            if (value) {
+              workingBoard = workingBoard.setIn(
+                [y, xIndex],
+                value,
+              )
+            }
             xIndex++
           }
         })
       })
-      return Immutable.fromJS(board)
+      return workingBoard
     } else {
       return null
     }

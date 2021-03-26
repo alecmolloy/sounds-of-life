@@ -1,32 +1,47 @@
-import type { Grid } from './game-of-life'
-import * as Immutable from 'immutable'
+import type { Grid, Row } from './game-of-life'
+import { Map } from 'immutable'
 
-export const emptyBoardArray = (
-  width: number,
-  height: number,
-): Array<Array<boolean>> =>
-  new Array(width).fill(new Array(height).fill(false))
+export const emptyGrid = (): Grid => Map()
 
-export const emptyBoard = (
-  width: number,
-  height: number,
-): Grid => Immutable.fromJS(emptyBoardArray(width, height))
+// export const soup = (width: number, height: number): Grid =>
+//   Map({
+//     ...new Array(height)
+//       .fill(
+//         Map({
+//           ...new Array(width).fill(false),
+//         }),
+//       )
+//       // why is this row an `any`?
+//       .map((row) => row.map(() => Math.random() >= 0.5)),
+//   })
 
-export const soup = (width: number, height: number): Grid =>
-  Immutable.fromJS(
-    new Array(width)
-      .fill(new Array(height).fill(false))
-      .map((row) => row.map(() => Math.random() >= 0.5)),
-  )
+export const blinker = (): Grid =>
+  emptyGrid().setIn([1], Map({ 1: true, 2: true, 3: true }))
 
-export const blinker = (
-  width: number,
-  height: number,
-): Grid =>
-  Immutable.fromJS(
-    new Array<Array<boolean>>(width)
-      .fill(new Array(height).fill(false))
-      .map((column, x) =>
-        column.map((_, y) => x < 3 && y === 1),
-      ),
-  )
+export const setDeeply = (
+  x: number,
+  y: number,
+  newValue: boolean,
+  grid: Grid,
+): Grid => {
+  if (grid.has(y)) {
+    const row = grid.get(y) as Row
+    if (newValue) {
+      return grid.set(y, row.set(x, newValue))
+    } else {
+      if (row.has(x)) {
+        return row.size === 1
+          ? grid.delete(y)
+          : grid.set(y, row.delete(x))
+      } else {
+        return grid
+      }
+    }
+  } else {
+    if (newValue) {
+      return grid.set(y, Map<number, true>().set(x, newValue))
+    } else {
+      return grid
+    }
+  }
+}
