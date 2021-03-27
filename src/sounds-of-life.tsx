@@ -6,12 +6,9 @@ import { GameCanvas } from './game-canvas'
 import { generate, Grid } from './game-of-life'
 import { emptyGrid } from './gol-utils'
 import { getBoardFromRLE } from './rle-handling'
+import { Helmet } from 'react-helmet'
 
-const DefaultWidth = 50
-const DefaultHeight = 50
-const DefaultCellSize = 5
-
-// TODO: infinite canvas, only render cells in frame, scrollwheel events, zoom
+// TODO: zoom to cursor rather than origin
 // TODO: bresenhem lines between mouse moves
 // TODO: support more RLE features, like board positioning
 // TODO: if RLE parsing is unsuccessful, make it fail gracefully
@@ -21,10 +18,10 @@ export const SoundsOfLife = () => {
   const [count, setCount] = React.useState(0)
   const [live, setLive] = React.useState(false)
   const [speed, setSpeed] = React.useState(200)
-  const [width, setWidth] = React.useState(DefaultWidth)
-  const [height, setHeight] = React.useState(DefaultHeight)
-  const [cellSize, setCellSize] = React.useState(DefaultCellSize)
-  const [showControls, setShowControls] = React.useState(false)
+  const [originX, setOriginX] = React.useState(0)
+  const [originY, setOriginY] = React.useState(0)
+  const [zoomLevel, setZoomLevel] = React.useState(10)
+  const [showControls, setShowControls] = React.useState(true)
 
   const runGeneration = React.useCallback(() => {
     setGrid(generate(grid))
@@ -49,8 +46,37 @@ export const SoundsOfLife = () => {
           runGeneration()
           break
         }
+        case 'KeyR': {
+          setGrid(emptyGrid)
+          break
+        }
         case 'Space': {
           setLive((v) => !v)
+          break
+        }
+        case 'Equal': {
+          if (e.metaKey) {
+            e.preventDefault()
+            setZoomLevel((v) => v * 1.1)
+          } else {
+            setSpeed((speed) => Math.round(speed / 1.1))
+          }
+          break
+        }
+        case 'Minus': {
+          if (e.metaKey) {
+            e.preventDefault()
+            setZoomLevel((v) => Math.max(1, v / 1.1))
+          } else {
+            setSpeed((speed) => Math.round(speed * 1.1))
+          }
+          break
+        }
+        case 'Digit0':
+        case 'Digit1': {
+          if (e.metaKey) {
+            setZoomLevel(1)
+          }
           break
         }
       }
@@ -58,55 +84,87 @@ export const SoundsOfLife = () => {
     [runGeneration],
   )
 
+  const onWheel = React.useCallback((e: WheelEvent) => {
+    e.preventDefault()
+    if (e.ctrlKey) {
+      setZoomLevel((v) => Math.max(0.5, v - e.deltaY * 0.1))
+    } else {
+      setOriginX((v) => v + e.deltaX * 2)
+      setOriginY((v) => v + e.deltaY * 2)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    document.body.addEventListener('wheel', onWheel, {
+      passive: false,
+    })
+
+    return () => {
+      document.body.removeEventListener('wheel', onWheel)
+    }
+  }, [onWheel])
+
   return (
-    <Dropzone
-      onDrop={(acceptedFiles) => {
-        const zeroth = acceptedFiles[0]
-        if (zeroth instanceof window.File) {
-          zeroth.text().then((text) => {
-            const parsedBoard = getBoardFromRLE(
-              text,
-              DefaultWidth,
-              DefaultHeight,
-            )
-            if (parsedBoard != null) {
-              setGrid(parsedBoard)
+    <>
+      <Helmet>
+        <style type='text/css'>
+          {`
+            body {
+              margin: 0;
+              overflow: hidden;
             }
-          })
-        }
-      }}
-    >
-      {({ getRootProps }) => (
-        <div
-          {...getRootProps()}
-          style={{ outline: 'none' }}
-          onKeyDown={onKeyDown}
-        >
-          <GameCanvas
-            width={DefaultWidth}
-            height={DefaultHeight}
-            cellSize={cellSize}
-            grid={grid}
-            setGrid={setGrid}
-          />
-          {showControls ? (
+            iframe {
+              display: none;
+            }
+          `}
+        </style>
+      </Helmet>
+      <Dropzone
+        onDrop={(acceptedFiles) => {
+          const zeroth = acceptedFiles[0]
+          if (zeroth instanceof window.File) {
+            zeroth.text().then((text) => {
+              const parsedBoard = getBoardFromRLE(text)
+              if (parsedBoard != null) {
+                setGrid(parsedBoard)
+              }
+            })
+          }
+        }}
+      >
+        {({ getRootProps }) => (
+          <div
+            id='onWheelTarget'
+            {...getRootProps()}
+            style={{ outline: 'none' }}
+            onKeyDown={onKeyDown}
+          >
+            <GameCanvas
+              originX={originX}
+              originY={originY}
+              zoomLevel={zoomLevel}
+              setZoomLevel={setZoomLevel}
+              grid={grid}
+              setGrid={setGrid}
+            />
             <Controls
+              originX={originX}
+              originY={originY}
+              showControls={showControls}
+              setShowControls={setShowControls}
               count={count}
               runGeneration={runGeneration}
               setGrid={setGrid}
-              width={width}
-              setWidth={setWidth}
-              height={height}
-              setHeight={setHeight}
               live={live}
               setLive={setLive}
               speed={speed}
               setSpeed={setSpeed}
-              cellSize={cellSize}
+              zoomLevel={zoomLevel}
+              setZoomLevel={setZoomLevel}
             />
-          ) : null}
-        </div>
-      )}
-    </Dropzone>
+          </div>
+        )}
+      </Dropzone>
+    </>
   )
 }

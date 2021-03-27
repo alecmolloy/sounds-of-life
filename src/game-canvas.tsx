@@ -7,18 +7,25 @@ import { setDeeply } from './gol-utils'
 type DrawMode = 'insert-cell' | 'erase' | 'not-drawing'
 
 interface GameCanvasProps {
-  width: number
-  height: number
   grid: Grid
   setGrid: React.Dispatch<React.SetStateAction<Grid>>
-  cellSize: number
+  zoomLevel: number
+  originX: number
+  originY: number
+  setZoomLevel: React.Dispatch<React.SetStateAction<number>>
 }
 
 export const GameCanvas = ({
   grid,
   setGrid,
-  cellSize,
+  zoomLevel,
+  setZoomLevel,
+  originX,
+  originY,
 }: GameCanvasProps) => {
+  const viewportRight = window.innerWidth + originX
+  const viewportBottom = window.innerHeight + originY
+
   const [drawMode, setDrawMode] = React.useState<DrawMode>(
     'not-drawing',
   )
@@ -39,19 +46,59 @@ export const GameCanvas = ({
   const draw = (p5: P5) => {
     p5.background(0)
     p5.strokeWeight(1)
-    p5.stroke(50)
-    for (let x = 1; x < window.innerWidth / cellSize; x++) {
-      p5.line(x * cellSize, 0, x * cellSize, window.innerHeight)
-    }
-    for (let y = 1; y < window.innerHeight / cellSize; y++) {
-      p5.line(0, y * cellSize, window.innerWidth, y * cellSize)
+    p5.stroke(20)
+
+    /*
+     we have the idea is that we have a grid that only draws for what is on the screen.
+     we need to know where to start drawing. 
+
+     lets say we have scrolled to the right, with the origin is 12 pixels to the left.
+     so originX = -12.
+
+     We want to draw the first line at 2, and then we want to draw subsequent lines, every cell until
+     we come to the window width
+     */
+
+    if (zoomLevel > 4) {
+      for (
+        let x = originX % zoomLevel;
+        x < window.innerWidth;
+        x += zoomLevel
+      ) {
+        p5.line(x, 0, x, window.innerHeight)
+      }
+      for (
+        let y = originY % zoomLevel;
+        y < window.innerHeight;
+        y += zoomLevel
+      ) {
+        p5.line(0, y, window.innerWidth, y)
+      }
     }
 
-    p5.stroke(0, 0, 0)
+    if (zoomLevel > 4) {
+      p5.stroke(0, 0, 0)
+      p5.strokeWeight(1)
+    } else {
+      p5.strokeWeight(0)
+    }
     grid.forEach((row, y) => {
       row.forEach((cell, x) => {
         if (cell) {
-          p5.rect(x * cellSize, y * cellSize, cellSize, cellSize)
+          const canvasX = x * zoomLevel
+          const canvasY = y * zoomLevel
+          if (
+            canvasX + zoomLevel > originX &&
+            canvasX < viewportRight &&
+            canvasY + zoomLevel > originY &&
+            canvasY < viewportBottom
+          )
+            p5.rect(
+              canvasX - originX,
+              canvasY - originY,
+              zoomLevel,
+              zoomLevel,
+            )
         }
       })
     })
@@ -59,8 +106,8 @@ export const GameCanvas = ({
 
   const mousePressedOrDragged = React.useCallback(
     (event: any) => {
-      const xIndex = Math.floor(event.mouseX / cellSize)
-      const yIndex = Math.floor(event.mouseY / cellSize)
+      const xIndex = Math.floor((event.mouseX + originX) / zoomLevel)
+      const yIndex = Math.floor((event.mouseY + originY) / zoomLevel)
 
       const currentValue = grid.getIn([yIndex, xIndex]) ?? false
       if (drawMode === 'not-drawing') {
@@ -72,7 +119,7 @@ export const GameCanvas = ({
         setGrid(setDeeply(xIndex, yIndex, newValue, grid))
       }
     },
-    [cellSize, drawMode, grid, setGrid],
+    [drawMode, grid, setGrid, zoomLevel, originX, originY],
   )
 
   const mouseReleased = React.useCallback(

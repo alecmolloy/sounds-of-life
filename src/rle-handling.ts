@@ -4,14 +4,10 @@
 // @ts-ignore
 import * as parser from './scripts/rle-parser'
 import { Grid } from './game-of-life'
-import { Map } from 'immutable'
+import { emptyGrid, setDeeply } from './gol-utils'
 
-export const getBoardFromRLE = (
-  rleText: string,
-  width: number,
-  height: number,
-): Grid | null => {
-  const parsed = parser.parse(rleText)
+export const getBoardFromRLE = (rleText: string): Grid | null => {
+  const parsed: unknown = parser.parse(rleText)
   if (Array.isArray(parsed)) {
     const parsedGOLLines = parsed.find(
       (item) => item?.type === 'lines',
@@ -19,13 +15,8 @@ export const getBoardFromRLE = (
     if (parsedGOLLines != null) {
       const lines: Array<Array<[number, 'b' | 'o']>> =
         parsedGOLLines.items
-      let workingBoard: Grid = Map({
-        ...new Array(height).fill(
-          Map({
-            ...new Array(width).fill(false),
-          }),
-        ),
-      })
+
+      let workingGrid = emptyGrid()
 
       lines.forEach((row, y) => {
         let xIndex = 0
@@ -34,16 +25,13 @@ export const getBoardFromRLE = (
           const value = cell[1] === 'o'
           for (let i = 0; i < count; i++) {
             if (value) {
-              workingBoard = workingBoard.setIn(
-                [y, xIndex],
-                value,
-              )
+              workingGrid = setDeeply(xIndex, y, value, workingGrid)
             }
             xIndex++
           }
         })
       })
-      return workingBoard
+      return workingGrid
     } else {
       return null
     }

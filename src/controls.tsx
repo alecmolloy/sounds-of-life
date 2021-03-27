@@ -1,20 +1,22 @@
 import * as React from 'react'
 import type { Grid } from './game-of-life'
 import { emptyGrid, soup, blinker } from './gol-utils'
+import { preventDefault } from './utils'
 
 interface ControlsProps {
+  showControls: boolean
+  setShowControls: React.Dispatch<React.SetStateAction<boolean>>
   runGeneration: () => void
   setGrid: React.Dispatch<React.SetStateAction<Grid>>
-  width: number
-  setWidth: React.Dispatch<React.SetStateAction<number>>
-  height: number
-  setHeight: React.Dispatch<React.SetStateAction<number>>
   live: boolean
   setLive: React.Dispatch<React.SetStateAction<boolean>>
   speed: number
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   count: number
-  cellSize: number
+  zoomLevel: number
+  setZoomLevel: React.Dispatch<React.SetStateAction<number>>
+  originX: number
+  originY: number
 }
 export const Controls = ({
   runGeneration,
@@ -24,7 +26,12 @@ export const Controls = ({
   speed,
   setSpeed,
   count,
-  cellSize,
+  zoomLevel,
+  setZoomLevel,
+  showControls,
+  setShowControls,
+  originX,
+  originY,
 }: ControlsProps) => {
   const onGenerateClick = React.useCallback(() => {
     runGeneration()
@@ -35,15 +42,8 @@ export const Controls = ({
   }, [setGrid])
 
   const onSoupClick = React.useCallback(() => {
-    setGrid(
-      soup(
-        0,
-        0,
-        window.innerWidth / cellSize,
-        window.innerHeight / cellSize,
-      ),
-    )
-  }, [setGrid, cellSize])
+    setGrid(soup(0, 0, 100, 100))
+  }, [setGrid])
 
   const onBlinkerClick = React.useCallback(() => {
     setGrid(blinker())
@@ -73,42 +73,80 @@ export const Controls = ({
         backgroundColor: '#fff2',
         padding: 10,
         color: 'white',
+        paddingRight: showControls ? 40 : 10,
+        userSelect: 'none',
       }}
+      onClick={preventDefault}
     >
-      <div>
-        <button
-          style={{ marginRight: '1em' }}
-          onClick={onGenerateClick}
-          disabled={live}
-        >
-          Generate
-        </button>
-        <button style={{ marginRight: '1em' }} onClick={onRunClick}>
-          {live ? 'Pause' : 'Run'}
-        </button>
-        Speed (ms):
-        <input
-          style={{ marginLeft: '1em', width: '5em' }}
-          type='number'
-          value={speed}
-          onChange={onSpeedChange}
-        />
-      </div>
-      <div style={{ marginTop: '1em' }}>
-        <button style={{ marginRight: '1em' }} onClick={onClearClick}>
-          Clear
-        </button>
-        <button style={{ marginRight: '1em' }} onClick={onSoupClick}>
-          Random Soup
-        </button>
-        <button
-          style={{ marginRight: '1em' }}
-          onClick={onBlinkerClick}
-        >
-          Blinker
-        </button>
-        Count: {count}
-      </div>
+      {showControls ? (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              cursor: 'pointer',
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowControls(false)
+            }}
+          >
+            ✕
+          </div>
+          <div>
+            <button
+              style={{ marginRight: '1em' }}
+              onClick={onGenerateClick}
+              disabled={live}
+            >
+              Generate
+            </button>
+            <button
+              style={{ marginRight: '1em' }}
+              onClick={onRunClick}
+            >
+              {live ? 'Pause' : 'Run'}
+            </button>
+            Speed (ms):
+            <input
+              style={{ marginLeft: '1em', width: '5em' }}
+              type='number'
+              value={speed}
+              onChange={onSpeedChange}
+            />
+          </div>
+          <div style={{ marginTop: '1em' }}>
+            <button
+              style={{ marginRight: '1em' }}
+              onClick={onClearClick}
+            >
+              Clear
+            </button>
+            <button
+              style={{ marginRight: '1em' }}
+              onClick={onSoupClick}
+            >
+              Random Soup
+            </button>
+            <button
+              style={{ marginRight: '1em' }}
+              onClick={onBlinkerClick}
+            >
+              Blinker
+            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div>Count: {count}</div>
+              <div>Zoom: {(zoomLevel * 100).toFixed(0)}%</div>
+              <div>
+                ({originX}, {originY})
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div onClick={() => setShowControls(true)}>Show Controls</div>
+      )}
     </div>
   )
 }
