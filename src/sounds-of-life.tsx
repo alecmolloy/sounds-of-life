@@ -1,15 +1,15 @@
 import { useInterval } from 'beautiful-react-hooks'
 import * as React from 'react'
 import Dropzone from 'react-dropzone'
+import { Helmet } from 'react-helmet'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
 import { generate, Grid } from './game-of-life'
 import { emptyGrid } from './gol-utils'
 import { getBoardFromRLE } from './rle-handling'
-import { Helmet } from 'react-helmet'
 
+// TODO: don't floor values for when cellSize is less than 1.0
 // TODO: zoom to cursor rather than origin
-// TODO: bresenhem lines between mouse moves
 // TODO: support more RLE features, like board positioning
 // TODO: if RLE parsing is unsuccessful, make it fail gracefully
 
@@ -75,7 +75,9 @@ export const SoundsOfLife = () => {
         case 'Digit0':
         case 'Digit1': {
           if (e.metaKey) {
-            setZoomLevel(1)
+            setZoomLevel(10)
+            setOriginX(0)
+            setOriginY(0)
           }
           break
         }

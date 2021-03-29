@@ -1,8 +1,10 @@
-import Sketch from 'react-p5'
 import * as P5 from 'p5'
 import * as React from 'react'
+import Sketch from 'react-p5'
+import { bresenhamLine } from './bresenham-line'
 import { Grid } from './game-of-life'
 import { setDeeply } from './gol-utils'
+import { Point } from './utils'
 
 type DrawMode = 'insert-cell' | 'erase' | 'not-drawing'
 
@@ -26,6 +28,10 @@ export const GameCanvas = ({
   const viewportRight = window.innerWidth + originX
   const viewportBottom = window.innerHeight + originY
 
+  const [
+    lastDraggedFramePosition,
+    setLastDraggedFramePosition,
+  ] = React.useState<Point | null>(null)
   const [drawMode, setDrawMode] = React.useState<DrawMode>(
     'not-drawing',
   )
@@ -46,29 +52,18 @@ export const GameCanvas = ({
   const draw = (p5: P5) => {
     p5.background(0)
     p5.strokeWeight(1)
-    p5.stroke(20)
-
-    /*
-     we have the idea is that we have a grid that only draws for what is on the screen.
-     we need to know where to start drawing. 
-
-     lets say we have scrolled to the right, with the origin is 12 pixels to the left.
-     so originX = -12.
-
-     We want to draw the first line at 2, and then we want to draw subsequent lines, every cell until
-     we come to the window width
-     */
+    p5.stroke(50)
 
     if (zoomLevel > 4) {
       for (
-        let x = originX % zoomLevel;
+        let x = -(originX % zoomLevel);
         x < window.innerWidth;
         x += zoomLevel
       ) {
         p5.line(x, 0, x, window.innerHeight)
       }
       for (
-        let y = originY % zoomLevel;
+        let y = -(originY % zoomLevel);
         y < window.innerHeight;
         y += zoomLevel
       ) {
@@ -76,12 +71,11 @@ export const GameCanvas = ({
       }
     }
 
-    if (zoomLevel > 4) {
-      p5.stroke(0, 0, 0)
-      p5.strokeWeight(1)
-    } else {
-      p5.strokeWeight(0)
-    }
+    const originOffset = zoomLevel > 4 ? 0.5 : 0
+    const sizeOffset = zoomLevel > 4 ? -1 : 0
+
+    p5.fill(255)
+    p5.strokeWeight(0)
     grid.forEach((row, y) => {
       row.forEach((cell, x) => {
         if (cell) {
@@ -94,10 +88,10 @@ export const GameCanvas = ({
             canvasY < viewportBottom
           )
             p5.rect(
-              canvasX - originX,
-              canvasY - originY,
-              zoomLevel,
-              zoomLevel,
+              canvasX - originX + originOffset,
+              canvasY - originY + originOffset,
+              zoomLevel + sizeOffset,
+              zoomLevel + sizeOffset,
             )
         }
       })
@@ -116,10 +110,32 @@ export const GameCanvas = ({
         setGrid(setDeeply(xIndex, yIndex, newValue, grid))
       } else {
         const newValue = drawMode === 'insert-cell'
-        setGrid(setDeeply(xIndex, yIndex, newValue, grid))
+        if (lastDraggedFramePosition != null) {
+          setGrid(
+            bresenhamLine(
+              lastDraggedFramePosition.x,
+              lastDraggedFramePosition.y,
+              xIndex,
+              yIndex,
+              newValue,
+              grid,
+            ),
+          )
+        } else {
+          setGrid(setDeeply(xIndex, yIndex, newValue, grid))
+        }
       }
+      setLastDraggedFramePosition({ x: xIndex, y: yIndex })
     },
-    [drawMode, grid, setGrid, zoomLevel, originX, originY],
+    [
+      drawMode,
+      grid,
+      setGrid,
+      zoomLevel,
+      originX,
+      originY,
+      lastDraggedFramePosition,
+    ],
   )
 
   const mouseReleased = React.useCallback(

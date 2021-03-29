@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Grid } from './game-of-life'
-import { emptyGrid, soup, blinker } from './gol-utils'
+import { blinker, emptyGrid, soup } from './gol-utils'
 import { preventDefault } from './utils'
 
 interface ControlsProps {

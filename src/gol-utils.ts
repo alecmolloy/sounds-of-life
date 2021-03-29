@@ -1,5 +1,5 @@
-import type { Grid, Row } from './game-of-life'
 import { Map } from 'immutable'
+import type { Grid, Row } from './game-of-life'
 
 export const emptyGrid = (): Grid => Map()
 

@@ -1,10 +1,10 @@
 // thanks to ALEXANDER SHCHAPOV for his code here:
 // https://darednaxella.name/pages/writing-javascript-parser-for-rle-files/
 
-// @ts-ignore
-import * as parser from './scripts/rle-parser'
 import { Grid } from './game-of-life'
 import { emptyGrid, setDeeply } from './gol-utils'
+// @ts-ignore
+import * as parser from './scripts/rle-parser'
 
 export const getBoardFromRLE = (rleText: string): Grid | null => {
   const parsed: unknown = parser.parse(rleText)
