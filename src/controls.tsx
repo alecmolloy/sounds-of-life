@@ -13,8 +13,8 @@ interface ControlsProps {
   speed: number
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   count: number
-  zoomLevel: number
-  setZoomLevel: React.Dispatch<React.SetStateAction<number>>
+  cellSize: number
+  setCellSize: React.Dispatch<React.SetStateAction<number>>
   originX: number
   originY: number
 }
@@ -26,8 +26,8 @@ export const Controls = ({
   speed,
   setSpeed,
   count,
-  zoomLevel,
-  setZoomLevel,
+  cellSize,
+  setCellSize,
   showControls,
   setShowControls,
   originX,
@@ -87,7 +87,7 @@ export const Controls = ({
               right: 10,
               cursor: 'pointer',
             }}
-            onClick={(e) => {
+            onClickCapture={(e) => {
               e.stopPropagation()
               setShowControls(false)
             }}
@@ -137,9 +137,10 @@ export const Controls = ({
             </button>
             <div style={{ display: 'flex', gap: 10 }}>
               <div>Count: {count}</div>
-              <div>Zoom: {(zoomLevel * 100).toFixed(0)}%</div>
+              <div>Cell Size: {cellSize.toFixed(0)}px</div>
               <div>
-                ({originX}, {originY})
+                Origin: ({Number(originX.toFixed(2))},{' '}
+                {Number(originY.toFixed(2))})
               </div>
             </div>
           </div>

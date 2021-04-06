@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
 import { generate, Grid } from './game-of-life'
-import { emptyGrid } from './gol-utils'
+import { emptyGrid, setDeeply } from './gol-utils'
 import { getBoardFromRLE } from './rle-handling'
 
 // TODO: don't floor values for when cellSize is less than 1.0
@@ -18,9 +18,9 @@ export const SoundsOfLife = () => {
   const [count, setCount] = React.useState(0)
   const [live, setLive] = React.useState(false)
   const [speed, setSpeed] = React.useState(200)
-  const [originX, setOriginX] = React.useState(0)
-  const [originY, setOriginY] = React.useState(0)
-  const [zoomLevel, setZoomLevel] = React.useState(10)
+  const [offsetX, setOffsetX] = React.useState(0)
+  const [offsetY, setOffsetY] = React.useState(0)
+  const [cellSize, setCellSize] = React.useState(10)
   const [showControls, setShowControls] = React.useState(true)
 
   const runGeneration = React.useCallback(() => {
@@ -43,11 +43,15 @@ export const SoundsOfLife = () => {
         }
         case 'KeyG':
         case 'Enter': {
+          if (live) {
+            setLive(false)
+          }
           runGeneration()
           break
         }
         case 'KeyR': {
           setGrid(emptyGrid)
+          setCount(0)
           break
         }
         case 'Space': {
@@ -57,7 +61,7 @@ export const SoundsOfLife = () => {
         case 'Equal': {
           if (e.metaKey) {
             e.preventDefault()
-            setZoomLevel((v) => v * 1.1)
+            setCellSize((v) => v * 1.1)
           } else {
             setSpeed((speed) => Math.round(speed / 1.1))
           }
@@ -66,7 +70,7 @@ export const SoundsOfLife = () => {
         case 'Minus': {
           if (e.metaKey) {
             e.preventDefault()
-            setZoomLevel((v) => Math.max(1, v / 1.1))
+            setCellSize((v) => Math.max(1, v / 1.1))
           } else {
             setSpeed((speed) => Math.round(speed * 1.1))
           }
@@ -75,36 +79,20 @@ export const SoundsOfLife = () => {
         case 'Digit0':
         case 'Digit1': {
           if (e.metaKey) {
-            setZoomLevel(10)
-            setOriginX(0)
-            setOriginY(0)
+            setCellSize(10)
+            setOffsetX(0)
+            setOffsetY(0)
           }
           break
         }
       }
     },
-    [runGeneration],
+    [runGeneration, live],
   )
 
-  const onWheel = React.useCallback((e: WheelEvent) => {
-    e.preventDefault()
-    if (e.ctrlKey) {
-      setZoomLevel((v) => Math.max(0.5, v - e.deltaY * 0.1))
-    } else {
-      setOriginX((v) => v + e.deltaX * 2)
-      setOriginY((v) => v + e.deltaY * 2)
-    }
-  }, [])
-
   React.useEffect(() => {
-    document.body.addEventListener('wheel', onWheel, {
-      passive: false,
-    })
-
-    return () => {
-      document.body.removeEventListener('wheel', onWheel)
-    }
-  }, [onWheel])
+    setGrid(setDeeply(0, 0, true, grid))
+  }, [])
 
   return (
     <>
@@ -142,16 +130,18 @@ export const SoundsOfLife = () => {
             onKeyDown={onKeyDown}
           >
             <GameCanvas
-              originX={originX}
-              originY={originY}
-              zoomLevel={zoomLevel}
-              setZoomLevel={setZoomLevel}
+              offsetX={offsetX}
+              setOffsetX={setOffsetX}
+              offsetY={offsetY}
+              setOffsetY={setOffsetY}
+              cellSize={cellSize}
+              setCellSize={setCellSize}
               grid={grid}
               setGrid={setGrid}
             />
             <Controls
-              originX={originX}
-              originY={originY}
+              originX={offsetX}
+              originY={offsetY}
               showControls={showControls}
               setShowControls={setShowControls}
               count={count}
@@ -161,8 +151,8 @@ export const SoundsOfLife = () => {
               setLive={setLive}
               speed={speed}
               setSpeed={setSpeed}
-              zoomLevel={zoomLevel}
-              setZoomLevel={setZoomLevel}
+              cellSize={cellSize}
+              setCellSize={setCellSize}
             />
           </div>
         )}

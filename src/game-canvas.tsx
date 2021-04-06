@@ -1,6 +1,6 @@
-import * as P5 from 'p5'
+import P5 from 'p5'
 import * as React from 'react'
-import Sketch from 'react-p5'
+import Sketch, { SketchProps } from 'react-p5'
 import { bresenhamLine } from './bresenham-line'
 import { Grid } from './game-of-life'
 import { setDeeply } from './gol-utils'
@@ -11,22 +11,34 @@ type DrawMode = 'insert-cell' | 'erase' | 'not-drawing'
 interface GameCanvasProps {
   grid: Grid
   setGrid: React.Dispatch<React.SetStateAction<Grid>>
-  zoomLevel: number
-  originX: number
-  originY: number
-  setZoomLevel: React.Dispatch<React.SetStateAction<number>>
+  cellSize: number
+  setCellSize: React.Dispatch<React.SetStateAction<number>>
+  offsetX: number
+  setOffsetX: React.Dispatch<React.SetStateAction<number>>
+  offsetY: number
+  setOffsetY: React.Dispatch<React.SetStateAction<number>>
 }
 
 export const GameCanvas = ({
   grid,
   setGrid,
-  zoomLevel,
-  setZoomLevel,
-  originX,
-  originY,
+  cellSize,
+  setCellSize,
+  offsetX,
+  setOffsetX,
+  offsetY,
+  setOffsetY,
 }: GameCanvasProps) => {
-  const viewportRight = window.innerWidth + originX
-  const viewportBottom = window.innerHeight + originY
+  const { innerWidth, innerHeight } = window
+  const hayWidth = innerWidth / 2
+  const hayHeight = innerHeight / 2
+
+  const viewportLeft = (offsetX * cellSize) / cellSize
+  const viewportTop = (offsetY * cellSize) / cellSize
+  const viewportBottom = innerHeight + viewportTop
+  const viewportRight = innerWidth + viewportLeft
+
+  const ref = React.useRef<React.Component<SketchProps>>(null)
 
   const [
     lastDraggedFramePosition,
@@ -35,6 +47,8 @@ export const GameCanvas = ({
   const [drawMode, setDrawMode] = React.useState<DrawMode>(
     'not-drawing',
   )
+  const [mouseX, setMouseX] = React.useState<number | null>(null)
+  const [mouseY, setMouseY] = React.useState<number | null>(null)
 
   const setup = React.useCallback(
     (p5: P5, canvasParentRef: Element) => {
@@ -52,58 +66,66 @@ export const GameCanvas = ({
   const draw = (p5: P5) => {
     p5.background(0)
     p5.strokeWeight(1)
-    p5.stroke(50)
 
-    if (zoomLevel > 4) {
+    p5.stroke(50)
+    if (cellSize > 15) {
       for (
-        let x = -(originX % zoomLevel);
-        x < window.innerWidth;
-        x += zoomLevel
+        let x = -((viewportLeft * cellSize) % cellSize);
+        x < innerWidth;
+        x += cellSize
       ) {
-        p5.line(x, 0, x, window.innerHeight)
+        p5.line(x, 0, x, innerHeight)
       }
       for (
-        let y = -(originY % zoomLevel);
-        y < window.innerHeight;
-        y += zoomLevel
+        let y = -((viewportTop * cellSize) % cellSize);
+        y < innerHeight;
+        y += cellSize
       ) {
-        p5.line(0, y, window.innerWidth, y)
+        p5.line(0, y, innerWidth, y)
       }
     }
 
-    const originOffset = zoomLevel > 4 ? 0.5 : 0
-    const sizeOffset = zoomLevel > 4 ? -1 : 0
+    const originOffset = cellSize > 4 ? 0.5 : 0
+    const sizeOffset = cellSize > 4 ? -1 : 0
 
     p5.fill(255)
     p5.strokeWeight(0)
     grid.forEach((row, y) => {
       row.forEach((cell, x) => {
         if (cell) {
-          const canvasX = x * zoomLevel
-          const canvasY = y * zoomLevel
           if (
-            canvasX + zoomLevel > originX &&
-            canvasX < viewportRight &&
-            canvasY + zoomLevel > originY &&
-            canvasY < viewportBottom
-          )
+            x + 1 > viewportLeft &&
+            x < viewportRight &&
+            y + 1 > viewportTop &&
+            y < viewportBottom
+          ) {
             p5.rect(
-              canvasX - originX + originOffset,
-              canvasY - originY + originOffset,
-              zoomLevel + sizeOffset,
-              zoomLevel + sizeOffset,
+              (x - viewportLeft) * cellSize + originOffset,
+              (y - viewportTop) * cellSize + originOffset,
+              cellSize + sizeOffset,
+              cellSize + sizeOffset,
             )
+          }
         }
       })
     })
   }
 
-  const mousePressedOrDragged = React.useCallback(
-    (event: any) => {
-      const xIndex = Math.floor((event.mouseX + originX) / zoomLevel)
-      const yIndex = Math.floor((event.mouseY + originY) / zoomLevel)
+  // TODO: support haypixels
+  const mouseMoved = React.useCallback(
+    (e: any) => {
+      setMouseX(Math.floor(e.mouseX / cellSize + viewportLeft))
+      setMouseY(Math.floor(e.mouseY / cellSize + viewportTop))
+    },
+    [cellSize, viewportTop, viewportLeft],
+  )
 
-      const currentValue = grid.getIn([yIndex, xIndex]) ?? false
+  const mousePressedOrDragged = React.useCallback(
+    (e: any) => {
+      const xIndex = Math.floor(e.mouseX / cellSize + viewportLeft)
+      const yIndex = Math.floor(e.mouseY / cellSize + viewportTop)
+
+      const currentValue = !!grid.getIn([yIndex, xIndex])
       if (drawMode === 'not-drawing') {
         const newValue = !currentValue
         setDrawMode(newValue ? 'insert-cell' : 'erase')
@@ -131,10 +153,10 @@ export const GameCanvas = ({
       drawMode,
       grid,
       setGrid,
-      zoomLevel,
-      originX,
-      originY,
+      cellSize,
       lastDraggedFramePosition,
+      viewportLeft,
+      viewportTop,
     ],
   )
 
@@ -143,18 +165,73 @@ export const GameCanvas = ({
     [],
   )
 
+  const onWheel = React.useCallback(
+    (e: WheelEvent) => {
+      e.preventDefault()
+      if (e.ctrlKey) {
+        const newCellSize = Math.min(
+          20,
+          Math.max(0.5, cellSize + (cellSize * -e.deltaY) / 100),
+        )
+
+        const x = e.x / cellSize
+        const y = e.y / cellSize
+
+        const scaleFactor = newCellSize / cellSize
+        setOffsetX((v) => x - x / scaleFactor + v)
+        setOffsetY((v) => y - y / scaleFactor + v)
+        setCellSize(newCellSize)
+      } else {
+        setOffsetX((v) => v + e.deltaX / cellSize)
+        setOffsetY((v) => v + e.deltaY / cellSize)
+      }
+    },
+    [setCellSize, setOffsetX, setOffsetY, cellSize],
+  )
+
+  React.useEffect(() => {
+    document.body.addEventListener('wheel', onWheel, {
+      passive: false,
+    })
+
+    return () => {
+      document.body.removeEventListener('wheel', onWheel)
+    }
+  }, [onWheel])
+
   return (
-    <Sketch
-      className='gol-grid'
-      setup={setup}
-      draw={draw}
-      mousePressed={mousePressedOrDragged}
-      mouseDragged={mousePressedOrDragged}
-      mouseReleased={mouseReleased}
-      windowResized={windowResize}
-      style={{
-        cursor: 'crosshair',
-      }}
-    />
+    <>
+      <Sketch
+        ref={ref}
+        className='gol-grid'
+        setup={setup}
+        draw={draw}
+        mouseMoved={mouseMoved}
+        mousePressed={mousePressedOrDragged}
+        mouseDragged={mousePressedOrDragged}
+        mouseReleased={mouseReleased}
+        windowResized={windowResize}
+        style={{
+          cursor: 'crosshair',
+        }}
+      />
+      {mouseX != null && mouseY != null ? (
+        <div
+          style={{
+            userSelect: 'none',
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            backgroundColor: 'black',
+            color: 'white',
+            fontFamily: 'monospace',
+            fontSize: 10,
+            padding: 2,
+          }}
+        >
+          ({mouseX}, {mouseY})
+        </div>
+      ) : null}
+    </>
   )
 }
