@@ -19,7 +19,7 @@ interface GameCanvasProps {
   setOffsetY: React.Dispatch<React.SetStateAction<number>>
 }
 
-export const GameCanvas = ({
+export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
   grid,
   setGrid,
   cellSize,
@@ -28,11 +28,8 @@ export const GameCanvas = ({
   setOffsetX,
   offsetY,
   setOffsetY,
-}: GameCanvasProps) => {
+}) => {
   const { innerWidth, innerHeight } = window
-  const hayWidth = innerWidth / 2
-  const hayHeight = innerHeight / 2
-
   const viewportLeft = (offsetX * cellSize) / cellSize
   const viewportTop = (offsetY * cellSize) / cellSize
   const viewportBottom = innerHeight + viewportTop

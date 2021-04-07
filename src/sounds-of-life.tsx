@@ -5,7 +5,8 @@ import { Helmet } from 'react-helmet'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
 import { generate, Grid } from './game-of-life'
-import { emptyGrid, setDeeply } from './gol-utils'
+import { emptyGrid } from './gol-utils'
+import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { getBoardFromRLE } from './rle-handling'
 
 // TODO: don't floor values for when cellSize is less than 1.0
@@ -33,66 +34,6 @@ export const SoundsOfLife = () => {
       runGeneration()
     }
   }, speed)
-
-  const onKeyDown = React.useCallback(
-    (e: React.KeyboardEvent) => {
-      switch (e.code) {
-        case 'KeyC': {
-          setShowControls((v) => !v)
-          break
-        }
-        case 'KeyG':
-        case 'Enter': {
-          if (live) {
-            setLive(false)
-          }
-          runGeneration()
-          break
-        }
-        case 'KeyR': {
-          setGrid(emptyGrid)
-          setCount(0)
-          break
-        }
-        case 'Space': {
-          setLive((v) => !v)
-          break
-        }
-        case 'Equal': {
-          if (e.metaKey) {
-            e.preventDefault()
-            setCellSize((v) => v * 1.1)
-          } else {
-            setSpeed((speed) => Math.round(speed / 1.1))
-          }
-          break
-        }
-        case 'Minus': {
-          if (e.metaKey) {
-            e.preventDefault()
-            setCellSize((v) => Math.max(1, v / 1.1))
-          } else {
-            setSpeed((speed) => Math.round(speed * 1.1))
-          }
-          break
-        }
-        case 'Digit0':
-        case 'Digit1': {
-          if (e.metaKey) {
-            setCellSize(10)
-            setOffsetX(0)
-            setOffsetY(0)
-          }
-          break
-        }
-      }
-    },
-    [runGeneration, live],
-  )
-
-  React.useEffect(() => {
-    setGrid(setDeeply(0, 0, true, grid))
-  }, [])
 
   return (
     <>
@@ -123,22 +64,30 @@ export const SoundsOfLife = () => {
         }}
       >
         {({ getRootProps }) => (
-          <div
-            id='onWheelTarget'
-            {...getRootProps()}
-            style={{ outline: 'none' }}
-            onKeyDown={onKeyDown}
-          >
-            <GameCanvas
-              offsetX={offsetX}
-              setOffsetX={setOffsetX}
-              offsetY={offsetY}
-              setOffsetY={setOffsetY}
-              cellSize={cellSize}
-              setCellSize={setCellSize}
-              grid={grid}
+          <div {...getRootProps()} style={{ outline: 'none' }}>
+            <KeyboardShortcuts
+              live={live}
+              runGeneration={runGeneration}
+              setLive={setLive}
               setGrid={setGrid}
-            />
+              setCount={setCount}
+              setCellSize={setCellSize}
+              setSpeed={setSpeed}
+              setOffsetX={setOffsetX}
+              setOffsetY={setOffsetY}
+              setShowControls={setShowControls}
+            >
+              <GameCanvas
+                offsetX={offsetX}
+                setOffsetX={setOffsetX}
+                offsetY={offsetY}
+                setOffsetY={setOffsetY}
+                cellSize={cellSize}
+                setCellSize={setCellSize}
+                grid={grid}
+                setGrid={setGrid}
+              />
+            </KeyboardShortcuts>
             <Controls
               originX={offsetX}
               originY={offsetY}
