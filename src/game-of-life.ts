@@ -1,5 +1,5 @@
 import type { Map } from 'immutable'
-import { emptyGrid, setDeeply } from './gol-utils'
+import { emptyGrid, getInGrid, setInGrid } from './gol-utils'
 
 export type Row = Map<number, true>
 export type Grid = Map<number, Row>
@@ -17,14 +17,15 @@ export function generate(grid: Grid): Grid {
       for (let hOffset = -1; hOffset <= 1; hOffset++) {
         for (let vOffset = -1; vOffset <= 1; vOffset++) {
           if (hOffset !== 0 || vOffset !== 0) {
-            const neighborValue = !!grid.getIn([
-              y + vOffset,
+            const neighborValue = getInGrid(
               x + hOffset,
-            ])
+              y + vOffset,
+              grid,
+            )
             if (neighborValue) {
               neighbors += 1
             } else {
-              workingPotentialNewNeighbors = setDeeply(
+              workingPotentialNewNeighbors = setInGrid(
                 x + hOffset,
                 y + vOffset,
                 true,
@@ -36,9 +37,9 @@ export function generate(grid: Grid): Grid {
       }
 
       if (neighbors < 2 || neighbors > 3) {
-        workingGrid = setDeeply(x, y, false, workingGrid)
+        workingGrid = setInGrid(x, y, false, workingGrid)
       } else {
-        workingGrid = setDeeply(x, y, true, workingGrid)
+        workingGrid = setInGrid(x, y, true, workingGrid)
       }
     })
   })
@@ -50,10 +51,11 @@ export function generate(grid: Grid): Grid {
       for (let hOffset = -1; hOffset <= 1; hOffset++) {
         for (let vOffset = -1; vOffset <= 1; vOffset++) {
           if (hOffset !== 0 || vOffset !== 0) {
-            const neighborValue = !!grid.getIn([
-              y + vOffset,
+            const neighborValue = getInGrid(
               x + hOffset,
-            ])
+              y + vOffset,
+              grid,
+            )
             if (neighborValue) {
               neighbors += 1
             }
@@ -61,7 +63,7 @@ export function generate(grid: Grid): Grid {
         }
       }
       if (neighbors === 3) {
-        workingGrid = setDeeply(x, y, true, workingGrid)
+        workingGrid = setInGrid(x, y, true, workingGrid)
       }
     })
   })

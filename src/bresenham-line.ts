@@ -1,5 +1,5 @@
 import { Grid } from './game-of-life'
-import { setDeeply } from './gol-utils'
+import { setInGrid } from './gol-utils'
 
 // Taken from https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 export function bresenhamLine(
@@ -19,7 +19,7 @@ export function bresenhamLine(
 
   let error = deltaX + deltaY
   while (true) {
-    workingGrid = setDeeply(x0, y0, newValue, workingGrid)
+    workingGrid = setInGrid(x0, y0, newValue, workingGrid)
     if (x0 === x1 && y0 === y1) {
       break
     }

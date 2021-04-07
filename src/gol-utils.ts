@@ -6,7 +6,7 @@ export const emptyGrid = (): Grid => Map()
 export const blinker = (): Grid =>
   emptyGrid().setIn([1], Map({ 1: true, 2: true, 3: true }))
 
-export const setDeeply = (
+export const setInGrid = (
   x: number,
   y: number,
   newValue: boolean,
@@ -34,6 +34,10 @@ export const setDeeply = (
   }
 }
 
+export function getInGrid(x: number, y: number, grid: Grid): boolean {
+  return !!grid.getIn([y, x])
+}
+
 export const soup = (
   x: number,
   y: number,
@@ -44,7 +48,7 @@ export const soup = (
   for (let xi = x; xi <= width; xi++) {
     for (let yi = y; yi <= height; yi++) {
       if (Math.random() >= 0.5) {
-        workingGrid = setDeeply(xi, yi, true, workingGrid)
+        workingGrid = setInGrid(xi, yi, true, workingGrid)
       }
     }
   }

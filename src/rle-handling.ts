@@ -2,7 +2,7 @@
 // https://darednaxella.name/pages/writing-javascript-parser-for-rle-files/
 
 import { Grid } from './game-of-life'
-import { emptyGrid, setDeeply } from './gol-utils'
+import { emptyGrid, setInGrid } from './gol-utils'
 // @ts-ignore
 import * as parser from './scripts/rle-parser'
 
@@ -25,7 +25,7 @@ export const getBoardFromRLE = (rleText: string): Grid | null => {
           const value = cell[1] === 'o'
           for (let i = 0; i < count; i++) {
             if (value) {
-              workingGrid = setDeeply(xIndex, y, value, workingGrid)
+              workingGrid = setInGrid(xIndex, y, value, workingGrid)
             }
             xIndex++
           }

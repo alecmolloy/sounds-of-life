@@ -3,7 +3,7 @@ import * as React from 'react'
 import Sketch, { SketchProps } from 'react-p5'
 import { bresenhamLine } from './bresenham-line'
 import { Grid } from './game-of-life'
-import { setDeeply } from './gol-utils'
+import { getInGrid, setInGrid } from './gol-utils'
 import { Point } from './utils'
 
 type DrawMode = 'insert-cell' | 'erase' | 'not-drawing'
@@ -134,11 +134,11 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
       )
       const yIndex = Math.floor(e.mouseY / cellSize + viewportCellTop)
 
-      const currentValue = !!grid.getIn([yIndex, xIndex])
+      const currentValue = getInGrid(xIndex, yIndex, grid)
       if (drawMode === 'not-drawing') {
         const newValue = !currentValue
         setDrawMode(newValue ? 'insert-cell' : 'erase')
-        setGrid(setDeeply(xIndex, yIndex, newValue, grid))
+        setGrid(setInGrid(xIndex, yIndex, newValue, grid))
       } else {
         const newValue = drawMode === 'insert-cell'
         if (lastDraggedFramePosition != null) {
@@ -153,7 +153,7 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
             ),
           )
         } else {
-          setGrid(setDeeply(xIndex, yIndex, newValue, grid))
+          setGrid(setInGrid(xIndex, yIndex, newValue, grid))
         }
       }
       setLastDraggedFramePosition({ x: xIndex, y: yIndex })
