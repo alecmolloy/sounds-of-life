@@ -29,11 +29,17 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
   offsetY,
   setOffsetY,
 }) => {
-  const { innerWidth, innerHeight } = window
-  const viewportLeft = (offsetX * cellSize) / cellSize
-  const viewportTop = (offsetY * cellSize) / cellSize
-  const viewportBottom = innerHeight + viewportTop
-  const viewportRight = innerWidth + viewportLeft
+  const {
+    innerWidth: screenWidth,
+    innerHeight: screenHeight,
+  } = window
+  const viewportCellWidth = screenWidth / cellSize
+  const viewportCellHeight = screenHeight / cellSize
+
+  const viewportCellLeft = offsetX
+  const viewportCellTop = offsetY
+  const viewportCellBottom = viewportCellHeight + viewportCellTop
+  const viewportCellRight = viewportCellWidth + viewportCellLeft
 
   const ref = React.useRef<React.Component<SketchProps>>(null)
 
@@ -62,28 +68,32 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
 
   const draw = (p5: P5) => {
     p5.background(0)
-    p5.strokeWeight(1)
 
-    p5.stroke(50)
-    if (cellSize > 15) {
+    p5.strokeWeight(0.5)
+    const showGrid = cellSize >= 10
+    if (showGrid) {
       for (
-        let x = -((viewportLeft * cellSize) % cellSize);
-        x < innerWidth;
-        x += cellSize
+        let cellX = Math.floor(viewportCellLeft) + 1;
+        cellX <= Math.floor(viewportCellRight) + 1;
+        cellX++
       ) {
-        p5.line(x, 0, x, innerHeight)
+        const screenX = (cellX - viewportCellLeft) * cellSize
+        p5.stroke(Math.floor(cellX) % 10 === 0 ? 75 : 50)
+        p5.line(screenX - 0.25, 0, screenX - 0.25, screenHeight)
       }
       for (
-        let y = -((viewportTop * cellSize) % cellSize);
-        y < innerHeight;
-        y += cellSize
+        let cellY = Math.floor(viewportCellTop) + 1;
+        cellY <= Math.floor(viewportCellBottom) + 1;
+        cellY++
       ) {
-        p5.line(0, y, innerWidth, y)
+        const screenY = (cellY - viewportCellTop) * cellSize
+        p5.stroke(Math.floor(cellY) % 10 === 0 ? 75 : 50)
+        p5.line(0, screenY - 0.25, screenWidth, screenY - 0.25)
       }
     }
 
-    const originOffset = cellSize > 4 ? 0.5 : 0
-    const sizeOffset = cellSize > 4 ? -1 : 0
+    const originOffset = showGrid ? -0.5 : 0
+    const sizeOffset = showGrid ? -0.5 : 0
 
     p5.fill(255)
     p5.strokeWeight(0)
@@ -91,14 +101,14 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
       row.forEach((cell, x) => {
         if (cell) {
           if (
-            x + 1 > viewportLeft &&
-            x < viewportRight &&
-            y + 1 > viewportTop &&
-            y < viewportBottom
+            x + 1 > viewportCellLeft &&
+            x < viewportCellRight &&
+            y + 1 > viewportCellTop &&
+            y < viewportCellBottom
           ) {
             p5.rect(
-              (x - viewportLeft) * cellSize + originOffset,
-              (y - viewportTop) * cellSize + originOffset,
+              (x - viewportCellLeft) * cellSize + originOffset,
+              (y - viewportCellTop) * cellSize + originOffset,
               cellSize + sizeOffset,
               cellSize + sizeOffset,
             )
@@ -111,16 +121,18 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
   // TODO: support haypixels
   const mouseMoved = React.useCallback(
     (e: any) => {
-      setMouseX(Math.floor(e.mouseX / cellSize + viewportLeft))
-      setMouseY(Math.floor(e.mouseY / cellSize + viewportTop))
+      setMouseX(Math.floor(e.mouseX / cellSize + viewportCellLeft))
+      setMouseY(Math.floor(e.mouseY / cellSize + viewportCellTop))
     },
-    [cellSize, viewportTop, viewportLeft],
+    [cellSize, viewportCellTop, viewportCellLeft],
   )
 
   const mousePressedOrDragged = React.useCallback(
     (e: any) => {
-      const xIndex = Math.floor(e.mouseX / cellSize + viewportLeft)
-      const yIndex = Math.floor(e.mouseY / cellSize + viewportTop)
+      const xIndex = Math.floor(
+        e.mouseX / cellSize + viewportCellLeft,
+      )
+      const yIndex = Math.floor(e.mouseY / cellSize + viewportCellTop)
 
       const currentValue = !!grid.getIn([yIndex, xIndex])
       if (drawMode === 'not-drawing') {
@@ -152,8 +164,8 @@ export const GameCanvas: React.FunctionComponent<GameCanvasProps> = ({
       setGrid,
       cellSize,
       lastDraggedFramePosition,
-      viewportLeft,
-      viewportTop,
+      viewportCellLeft,
+      viewportCellTop,
     ],
   )
 
