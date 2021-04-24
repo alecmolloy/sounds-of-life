@@ -71,6 +71,8 @@ export class GOL {
 
   /**
    * Set the entire simulation state at once.
+   * @state should be a one-dimensional `Uint8Array` of size (w × h),
+   * with on cells set to `255` and off to `0`.
    */
   setState = (state: Uint8Array): this => {
     const rgba = new Uint8Array(
@@ -78,7 +80,7 @@ export class GOL {
     )
     for (let i = 0; i < state.length; i++) {
       const ii = i * 4
-      const newValue = state[i] ? 255 : 0
+      const newValue = state[i]
       rgba[ii] = newValue
       rgba[ii + 1] = newValue
       rgba[ii + 2] = newValue

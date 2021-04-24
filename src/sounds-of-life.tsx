@@ -8,9 +8,6 @@ import { GOL } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { setBoardFromRLE } from './rle-handling'
 
-// TODO: toggle-able grid
-// TODO: scrolling
-// TODO: zoom to cursor rather than origin
 // TODO: re-enable setting via RLE
 // TODO: don't floor values for when cellSize is less than 1.0
 // TODO: support more RLE features, like board positioning
@@ -21,7 +18,7 @@ export const SoundsOfLife = () => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
   const [count, setCount] = React.useState(0)
-  const [live, setLive] = React.useState(true)
+  const [live, setLive] = React.useState(false)
   const [speed, setSpeed] = React.useState(200)
   const [offset, setReactOffset] = React.useState(
     new Float32Array([0, 0]),
@@ -29,15 +26,15 @@ export const SoundsOfLife = () => {
   const [cellSize, setReactCellSize] = React.useState(10)
   const [showControls, setShowControls] = React.useState(true)
 
+  const step = React.useCallback(() => {
+    gameOfLifeRef.current?.step()
+  }, [])
+
   useInterval(() => {
     if (live) {
       step()
     }
   }, speed)
-
-  const step = React.useCallback(() => {
-    gameOfLifeRef.current?.step()
-  }, [])
 
   const animate = React.useCallback(() => {
     gameOfLifeRef.current?.render()
