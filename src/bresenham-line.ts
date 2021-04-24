@@ -1,5 +1,4 @@
-import { Grid } from './game-of-life'
-import { setInGrid } from './gol-utils'
+import { GOL } from './game-of-life'
 
 // Taken from https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 export function bresenhamLine(
@@ -8,9 +7,9 @@ export function bresenhamLine(
   x1: number,
   y1: number,
   newValue: boolean,
-  grid: Grid,
-): Grid {
-  let workingGrid = grid
+  gameOfLife: GOL,
+): GOL {
+  let workingGrid = gameOfLife
 
   const deltaX = Math.abs(x1 - x0)
   const stepX = x0 < x1 ? 1 : -1
@@ -19,7 +18,7 @@ export function bresenhamLine(
 
   let error = deltaX + deltaY
   while (true) {
-    workingGrid = setInGrid(x0, y0, newValue, workingGrid)
+    workingGrid = gameOfLife.setCell(x0, y0, newValue)
     if (x0 === x1 && y0 === y1) {
       break
     }

@@ -1,12 +1,14 @@
 // thanks to ALEXANDER SHCHAPOV for his code here:
 // https://darednaxella.name/pages/writing-javascript-parser-for-rle-files/
 
-import { Grid } from './game-of-life'
-import { emptyGrid, setInGrid } from './gol-utils'
 // @ts-ignore
+import { GOL } from './game-of-life'
 import * as parser from './scripts/rle-parser'
 
-export const getBoardFromRLE = (rleText: string): Grid | null => {
+export const setBoardFromRLE = (
+  rleText: string,
+  gameOfLife: GOL,
+): GOL => {
   const parsed: unknown = parser.parse(rleText)
   if (Array.isArray(parsed)) {
     const parsedGOLLines = parsed.find(
@@ -16,8 +18,6 @@ export const getBoardFromRLE = (rleText: string): Grid | null => {
       const lines: Array<Array<[number, 'b' | 'o']>> =
         parsedGOLLines.items
 
-      let workingGrid = emptyGrid()
-
       lines.forEach((row, y) => {
         let xIndex = 0
         row.forEach((cell) => {
@@ -25,17 +25,14 @@ export const getBoardFromRLE = (rleText: string): Grid | null => {
           const value = cell[1] === 'o'
           for (let i = 0; i < count; i++) {
             if (value) {
-              workingGrid = setInGrid(xIndex, y, value, workingGrid)
+              gameOfLife.setCell(xIndex, y, value)
             }
             xIndex++
           }
         })
       })
-      return workingGrid
-    } else {
-      return null
+      return gameOfLife
     }
-  } else {
-    return null
   }
+  throw Error('Error parsing RLE file')
 }

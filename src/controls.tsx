@@ -1,26 +1,21 @@
 import * as React from 'react'
-import type { Grid } from './game-of-life'
-import { blinker, emptyGrid, soup } from './gol-utils'
 import { preventDefault } from './utils'
 
 interface ControlsProps {
   showControls: boolean
   setShowControls: React.Dispatch<React.SetStateAction<boolean>>
   runGeneration: () => void
-  setGrid: React.Dispatch<React.SetStateAction<Grid>>
   live: boolean
   setLive: React.Dispatch<React.SetStateAction<boolean>>
   speed: number
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   count: number
   cellSize: number
-  setCellSize: React.Dispatch<React.SetStateAction<number>>
-  originX: number
-  originY: number
+  setCellSize: (v: number) => void
+  offset: Float32Array
 }
 export const Controls = ({
   runGeneration,
-  setGrid,
   live,
   setLive,
   speed,
@@ -30,24 +25,23 @@ export const Controls = ({
   setCellSize,
   showControls,
   setShowControls,
-  originX,
-  originY,
+  offset,
 }: ControlsProps) => {
   const onGenerateClick = React.useCallback(() => {
     runGeneration()
   }, [runGeneration])
 
-  const onClearClick = React.useCallback(() => {
-    setGrid(emptyGrid())
-  }, [setGrid])
+  // const onClearClick = React.useCallback(() => {
+  //   setGrid(emptyGrid())
+  // }, [setGrid])
 
-  const onSoupClick = React.useCallback(() => {
-    setGrid(soup(0, 0, 100, 100))
-  }, [setGrid])
+  // const onSoupClick = React.useCallback(() => {
+  //   setGrid(soup(0, 0, 100, 100))
+  // }, [setGrid])
 
-  const onBlinkerClick = React.useCallback(() => {
-    setGrid(blinker())
-  }, [setGrid])
+  // const onBlinkerClick = React.useCallback(() => {
+  //   setGrid(blinker())
+  // }, [setGrid])
 
   const onRunClick = React.useCallback(() => {
     setLive((v) => !v)
@@ -117,7 +111,7 @@ export const Controls = ({
             />
           </div>
           <div style={{ marginTop: '1em' }}>
-            <button
+            {/* <button
               style={{ marginRight: '1em' }}
               onClick={onClearClick}
             >
@@ -134,13 +128,13 @@ export const Controls = ({
               onClick={onBlinkerClick}
             >
               Blinker
-            </button>
+            </button> */}
             <div style={{ display: 'flex', gap: 10 }}>
               <div>Count: {count}</div>
               <div>Cell Size: {cellSize.toFixed(0)}px</div>
               <div>
-                Origin: ({Number(originX.toFixed(2))},{' '}
-                {Number(originY.toFixed(2))})
+                Origin: ({Number(offset[0].toFixed(2))},{' '}
+                {Number(offset[1].toFixed(2))})
               </div>
             </div>
           </div>

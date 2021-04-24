@@ -1,17 +1,13 @@
 import * as React from 'react'
-import { Grid } from './game-of-life'
-import { emptyGrid } from './gol-utils'
 
 interface KeyboardShortcutsProps {
   live: boolean
   runGeneration: () => void
   setLive: React.Dispatch<React.SetStateAction<boolean>>
-  setGrid: React.Dispatch<React.SetStateAction<Grid>>
   setCount: React.Dispatch<React.SetStateAction<number>>
   setCellSize: React.Dispatch<React.SetStateAction<number>>
   setSpeed: React.Dispatch<React.SetStateAction<number>>
-  setOffsetX: React.Dispatch<React.SetStateAction<number>>
-  setOffsetY: React.Dispatch<React.SetStateAction<number>>
+  setOffset: React.Dispatch<React.SetStateAction<Float32Array>>
   setShowControls: React.Dispatch<React.SetStateAction<boolean>>
 }
 
@@ -19,12 +15,10 @@ export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> 
   live,
   setLive,
   runGeneration,
-  setGrid,
   setCount,
   setCellSize,
   setSpeed,
-  setOffsetX,
-  setOffsetY,
+  setOffset,
   setShowControls,
   children,
 }) => {
@@ -43,7 +37,7 @@ export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> 
         break
       }
       case 'KeyR': {
-        setGrid(emptyGrid())
+        // setGrid(emptyGrid())
         setCount(0)
         break
       }
@@ -73,15 +67,18 @@ export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> 
       case 'Digit1': {
         if (e.metaKey) {
           setCellSize(10)
-          setOffsetX(0)
-          setOffsetY(0)
+          setOffset(new Float32Array([0, 0]))
         }
         break
       }
     }
   }
   return (
-    <div tabIndex={0} onKeyDown={onKeyDown}>
+    <div
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+      style={{ outline: 'none' }}
+    >
       {children}
     </div>
   )
