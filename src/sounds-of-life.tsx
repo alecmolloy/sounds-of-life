@@ -8,7 +8,6 @@ import { GOL } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 
-// TODO: re-enable setting via RLE
 // TODO: don't floor values for when cellSize is less than 1.0
 // TODO: support more RLE features, like board positioning
 // TODO: if RLE parsing is unsuccessful, make it fail gracefully
