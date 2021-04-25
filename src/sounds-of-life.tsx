@@ -6,7 +6,7 @@ import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
 import { GOL } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
-import { setBoardFromRLE } from './rle-handling'
+import { parseRLEAndUpdateBoard } from './rle-handling'
 
 // TODO: re-enable setting via RLE
 // TODO: don't floor values for when cellSize is less than 1.0
@@ -104,13 +104,11 @@ export const SoundsOfLife = () => {
           if (zeroth instanceof window.File) {
             zeroth.text().then((text) => {
               if (gameOfLifeRef.current != null) {
-                const parsedBoard = setBoardFromRLE(
+                parseRLEAndUpdateBoard(
                   text,
                   gameOfLifeRef.current,
+                  setOffset,
                 )
-                if (parsedBoard != null) {
-                  // setGrid(parsedBoard)
-                }
               }
             })
           }
