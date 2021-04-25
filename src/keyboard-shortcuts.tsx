@@ -10,7 +10,6 @@ interface KeyboardShortcutsProps {
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   setOffset: React.Dispatch<React.SetStateAction<Float32Array>>
   setShowControls: React.Dispatch<React.SetStateAction<boolean>>
-  gameOfLifeRef: React.MutableRefObject<GOL | undefined>
 }
 
 export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> = ({
