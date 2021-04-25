@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { GOL } from './game-of-life'
 
 interface KeyboardShortcutsProps {
   live: boolean
