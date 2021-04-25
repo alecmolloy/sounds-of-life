@@ -12,7 +12,6 @@ export const setBoardFromRLE = (rleText: string, gameOfLife: GOL) => {
     const parsedGOLLines = parsed.find(
       (item) => item?.type === 'lines',
     )
-    debugger
     if (parsedGOLLines != null) {
       const width = gameOfLife.stateSize[0]
       const height = gameOfLife.stateSize[0]
