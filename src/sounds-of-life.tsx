@@ -45,12 +45,6 @@ export const SoundsOfLife = () => {
     window.requestAnimationFrame(animate)
   }, [])
 
-  React.useEffect(() => {
-    if (gameOfLifeRef.current != null) {
-      gameOfLifeRef.current.offset = offset
-    }
-  }, [offset])
-
   const setCellSize = React.useCallback(
     (setStateAction: React.SetStateAction<number>) => {
       setReactCellSize((oldV) => {
@@ -82,6 +76,21 @@ export const SoundsOfLife = () => {
     },
     [],
   )
+
+  const onPaste = React.useCallback(
+    (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData('text')
+      if (gameOfLifeRef.current != null && text != null) {
+        parseRLEAndUpdateBoard(text, gameOfLifeRef.current, setOffset)
+      }
+    },
+    [setOffset],
+  )
+
+  React.useEffect(() => {
+    window.addEventListener('paste', onPaste as any)
+    return () => window.removeEventListener('paste', onPaste as any)
+  })
 
   return (
     <>
@@ -125,6 +134,7 @@ export const SoundsOfLife = () => {
               setSpeed={setSpeed}
               setOffset={setReactOffset}
               setShowControls={setShowControls}
+              gameOfLifeRef={gameOfLifeRef}
             >
               <GameCanvas
                 ref={canvasRef}

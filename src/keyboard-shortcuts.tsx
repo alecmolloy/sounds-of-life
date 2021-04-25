@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { GOL } from './game-of-life'
 
 interface KeyboardShortcutsProps {
   live: boolean
@@ -9,6 +10,7 @@ interface KeyboardShortcutsProps {
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   setOffset: React.Dispatch<React.SetStateAction<Float32Array>>
   setShowControls: React.Dispatch<React.SetStateAction<boolean>>
+  gameOfLifeRef: React.MutableRefObject<GOL | undefined>
 }
 
 export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> = ({
@@ -21,6 +23,7 @@ export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> 
   setOffset,
   setShowControls,
   children,
+  gameOfLifeRef,
 }) => {
   const onKeyDown = (e: React.KeyboardEvent) => {
     switch (e.code) {
