@@ -23,7 +23,6 @@ export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> 
   setOffset,
   setShowControls,
   children,
-  gameOfLifeRef,
 }) => {
   const onKeyDown = (e: React.KeyboardEvent) => {
     switch (e.code) {
