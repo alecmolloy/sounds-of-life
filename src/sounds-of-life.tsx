@@ -8,9 +8,9 @@ import { GOL } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 
-// TODO: don't floor values for when cellSize is less than 1.0
-// TODO: support more RLE features, like board positioning
-// TODO: if RLE parsing is unsuccessful, make it fail gracefully
+// TODO: maybe allow users to change size of board, check to see if it is lossy
+// TODO: change board size if RLE is too big, warn users
+// TODO: a nice UI
 
 export const SoundsOfLife = () => {
   const gameOfLifeRef = React.useRef<GOL>()
@@ -133,7 +133,6 @@ export const SoundsOfLife = () => {
               setSpeed={setSpeed}
               setOffset={setReactOffset}
               setShowControls={setShowControls}
-              gameOfLifeRef={gameOfLifeRef}
             >
               <GameCanvas
                 ref={canvasRef}

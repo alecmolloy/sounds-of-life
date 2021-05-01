@@ -3,7 +3,6 @@ precision mediump float;
 #endif
 
 uniform sampler2D state;
-uniform float cellSize;
 uniform vec2 stateSize;
 
 const vec4 on  = vec4(1.0, 1.0, 1.0, 1.0);

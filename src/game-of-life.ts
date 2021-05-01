@@ -23,14 +23,18 @@ export class GOL {
   textures: { front: Texture; back: Texture }
   framebuffers: { step: Framebuffer }
   offset: Float32Array
-  width: number
-  height: number
+  boardWidth: number
+  boardHeight: number
+  renderWidth: number
+  renderHeight: number
 
   constructor(
     canvas: HTMLCanvasElement,
     cellSize: number = 4,
-    width: number = 2 ** 10,
-    height: number = 2 ** 10,
+    renderWidth: number,
+    renderHeight: number,
+    boardWidth: number = 2 ** 12,
+    boardHeight: number = 2 ** 12,
   ) {
     this.igloo = new Igloo(canvas)
     const gl = this.igloo.gl
@@ -38,13 +42,12 @@ export class GOL {
       throw Error('Could not initialize WebGL!')
     }
     this.cellSize = cellSize
-    this.width = width
-    this.height = height
-    this.viewSize = new Float32Array([
-      window.innerWidth,
-      window.innerHeight,
-    ])
-    this.stateSize = new Float32Array([width, height])
+    this.boardWidth = boardWidth
+    this.boardHeight = boardHeight
+    this.renderWidth = renderWidth
+    this.renderHeight = renderHeight
+    this.viewSize = new Float32Array([renderWidth, renderHeight])
+    this.stateSize = new Float32Array([boardWidth, boardHeight])
     this.offset = new Float32Array([0, 0])
 
     gl.disable(gl.DEPTH_TEST)
@@ -166,9 +169,10 @@ export class GOL {
       .uniform('cellSize', this.cellSize)
       .uniform('viewSize', this.viewSize)
       .uniform('offset', this.offset)
+      .uniform('devicePixelRatio', window.devicePixelRatio)
       .uniform(
         'u_resolution',
-        new Float32Array([window.innerWidth, window.innerHeight]),
+        new Float32Array([this.renderWidth, this.renderHeight]),
       )
       .draw(gl.TRIANGLE_STRIP, 4)
     return this
@@ -185,8 +189,8 @@ export class GOL {
     const v = newValue ? 255 : 0
     this.textures.front.subset(
       [v, v, v, 255],
-      GOL.wrap(x, this.width),
-      GOL.wrap(y, this.height),
+      GOL.wrap(x, this.boardWidth),
+      GOL.wrap(y, this.boardHeight),
       1,
       1,
     )
@@ -200,8 +204,8 @@ export class GOL {
     const gl = this.igloo.gl
     const rgba = new Uint8Array(4)
     gl.readPixels(
-      GOL.wrap(x, this.width),
-      GOL.wrap(y, this.height),
+      GOL.wrap(x, this.boardWidth),
+      GOL.wrap(y, this.boardHeight),
       1,
       1,
       gl.RGBA,
