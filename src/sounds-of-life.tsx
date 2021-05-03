@@ -99,6 +99,7 @@ export const SoundsOfLife = () => {
             body {
               margin: 0;
               overflow: hidden;
+              background-color: black;
             }
             iframe {
               display: none;

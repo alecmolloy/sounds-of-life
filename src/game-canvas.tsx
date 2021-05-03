@@ -66,8 +66,10 @@ export const GameCanvas = React.forwardRef<
       setCanvasDrawingSize([newRenderWidth, newRenderHeight])
       setCanvasStyleSize([window.innerWidth, window.innerHeight])
       if (gameOfLifeRef.current != null) {
-        gameOfLifeRef.current.renderWidth = newRenderWidth
-        gameOfLifeRef.current.renderHeight = newRenderHeight
+        gameOfLifeRef.current.viewSize = new Float32Array([
+          newRenderWidth,
+          newRenderHeight,
+        ])
       }
     }, [])
 

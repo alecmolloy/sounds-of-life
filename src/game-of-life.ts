@@ -25,8 +25,6 @@ export class GOL {
   offset: Float32Array
   boardWidth: number
   boardHeight: number
-  renderWidth: number
-  renderHeight: number
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -44,8 +42,6 @@ export class GOL {
     this.cellSize = cellSize
     this.boardWidth = boardWidth
     this.boardHeight = boardHeight
-    this.renderWidth = renderWidth
-    this.renderHeight = renderHeight
     this.viewSize = new Float32Array([renderWidth, renderHeight])
     this.stateSize = new Float32Array([boardWidth, boardHeight])
     this.offset = new Float32Array([0, 0])
@@ -170,10 +166,7 @@ export class GOL {
       .uniform('viewSize', this.viewSize)
       .uniform('offset', this.offset)
       .uniform('devicePixelRatio', window.devicePixelRatio)
-      .uniform(
-        'u_resolution',
-        new Float32Array([this.renderWidth, this.renderHeight]),
-      )
+      .uniform('u_resolution', this.viewSize)
       .draw(gl.TRIANGLE_STRIP, 4)
     return this
   }
