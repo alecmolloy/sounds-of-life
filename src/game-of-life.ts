@@ -18,8 +18,6 @@ export class GOL {
   textures: { front: Texture; back: Texture }
   framebuffers: { step: Framebuffer }
   offset: Float32Array
-  boardWidth: number
-  boardHeight: number
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -35,8 +33,6 @@ export class GOL {
       throw Error('Could not initialize WebGL!')
     }
     this.cellSize = cellSize
-    this.boardWidth = boardWidth
-    this.boardHeight = boardHeight
     this.viewSize = new Float32Array([renderWidth, renderHeight])
     this.stateSize = new Float32Array([boardWidth, boardHeight])
     this.offset = new Float32Array([0, 0])
@@ -167,8 +163,8 @@ export class GOL {
     const v = newValue ? 255 : 0
     this.textures.front.subset(
       [v, v, v, 255],
-      GOL.wrap(x, this.boardWidth),
-      GOL.wrap(y, this.boardHeight),
+      GOL.wrap(x, this.stateSize[0]),
+      GOL.wrap(y, this.stateSize[1]),
       1,
       1,
     )
@@ -181,15 +177,16 @@ export class GOL {
   getCell = (x: number, y: number): boolean => {
     const gl = this.igloo.gl
     const rgba = new Uint8Array(4)
+    this.framebuffers.step.attach(this.textures.front)
     gl.readPixels(
-      GOL.wrap(x, this.boardWidth),
-      GOL.wrap(y, this.boardHeight),
+      GOL.wrap(x, this.stateSize[0]),
+      GOL.wrap(y, this.stateSize[1]),
       1,
       1,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
       rgba,
     )
-    return rgba[0] === 1
+    return rgba[0] === 255
   }
 }
