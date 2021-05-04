@@ -74,11 +74,7 @@ export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> 
     }
   }
   return (
-    <div
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-      style={{ outline: 'none' }}
-    >
+    <div tabIndex={0} onKeyDown={onKeyDown} style={{ outline: 'none' }}>
       {children}
     </div>
   )

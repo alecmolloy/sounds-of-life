@@ -19,9 +19,7 @@ export const SoundsOfLife = () => {
   const [count, setCount] = React.useState(0)
   const [live, setLive] = React.useState(false)
   const [speed, setSpeed] = React.useState(200)
-  const [offset, setReactOffset] = React.useState(
-    new Float32Array([0, 0]),
-  )
+  const [offset, setReactOffset] = React.useState(new Float32Array([0, 0]))
   const [cellSize, setReactCellSize] = React.useState(10)
   const [showControls, setShowControls] = React.useState(true)
 
@@ -113,11 +111,7 @@ export const SoundsOfLife = () => {
           if (zeroth instanceof window.File) {
             zeroth.text().then((text) => {
               if (gameOfLifeRef.current != null) {
-                parseRLEAndUpdateBoard(
-                  text,
-                  gameOfLifeRef.current,
-                  setOffset,
-                )
+                parseRLEAndUpdateBoard(text, gameOfLifeRef.current, setOffset)
               }
             })
           }

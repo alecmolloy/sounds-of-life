@@ -39,13 +39,7 @@ interface TopLeftCoordinates {
   y: number
 }
 
-type Line =
-  | Cells
-  | Name
-  | Author
-  | Comment
-  | Header
-  | TopLeftCoordinates
+type Line = Cells | Name | Author | Comment | Header | TopLeftCoordinates
 
 export const parseRLEAndUpdateBoard = (
   rleText: string,
@@ -84,9 +78,7 @@ export const parseRLEAndUpdateBoard = (
         }
       })
 
-      const header = parsed.find(
-        (v): v is Header => v.type === 'header',
-      )
+      const header = parsed.find((v): v is Header => v.type === 'header')
 
       // only set state if rule isn't defined or is GOL rule
       if (header == null || header.rule == null) {
@@ -95,15 +87,11 @@ export const parseRLEAndUpdateBoard = (
         if (header.rule.toUpperCase() === 'B3/S23') {
           gameOfLife.setState(workingStateArray)
           const topLeftCoordinates = parsed.find(
-            (v): v is TopLeftCoordinates =>
-              v.type === 'topLeftCoordinates',
+            (v): v is TopLeftCoordinates => v.type === 'topLeftCoordinates',
           )
           if (topLeftCoordinates != null) {
             setOffset(
-              new Float32Array([
-                topLeftCoordinates.x,
-                topLeftCoordinates.y,
-              ]),
+              new Float32Array([topLeftCoordinates.x, topLeftCoordinates.y]),
             )
           }
         }

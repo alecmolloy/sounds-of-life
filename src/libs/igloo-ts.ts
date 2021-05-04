@@ -84,13 +84,9 @@ export class Program {
       if (this.vars[name] == null) this.uniform(name)
       const v = this.vars[name]
       if (Igloo.isArray(value)) {
-        const method =
-          'uniform' + value.length + (i ? 'i' : 'f') + 'v'
+        const method = 'uniform' + value.length + (i ? 'i' : 'f') + 'v'
         this.gl[method](v, value)
-      } else if (
-        typeof value === 'number' ||
-        typeof value === 'boolean'
-      ) {
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
         if (i) {
           this.gl.uniform1i(v, <number>value)
         } else {
@@ -377,10 +373,7 @@ export class Buffer {
    * @param {GLenum} [usage]
    * @returns {Buffer} this
    */
-  public update(
-    data: ArrayBuffer | ArrayBufferView,
-    usage: GLenum,
-  ): Buffer {
+  public update(data: ArrayBuffer | ArrayBufferView, usage: GLenum): Buffer {
     const gl = this.gl
     if (data instanceof Array) {
       data = new Float32Array(data)
@@ -545,12 +538,7 @@ export class Texture {
   }
 
   /** Copy part/all of the current framebuffer to this image */
-  private copy(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ): Texture {
+  private copy(x: number, y: number, width: number, height: number): Texture {
     this.gl.copyTexImage2D(
       this.gl.TEXTURE_2D,
       0,

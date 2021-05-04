@@ -1,9 +1,4 @@
-import Igloo, {
-  Buffer,
-  Framebuffer,
-  Program,
-  Texture,
-} from './libs/igloo-ts'
+import Igloo, { Buffer, Framebuffer, Program, Texture } from './libs/igloo-ts'
 import quad from './glsl/quad.vert'
 import gol from './glsl/gol.frag'
 import grid from './glsl/grid.frag'
@@ -74,9 +69,7 @@ export class GOL {
    * with on cells set to `255` and off to `0`.
    */
   setState = (state: Uint8Array): this => {
-    const rgba = new Uint8Array(
-      this.stateSize[0] * this.stateSize[1] * 4,
-    )
+    const rgba = new Uint8Array(this.stateSize[0] * this.stateSize[1] * 4)
     for (let i = 0; i < state.length; i++) {
       const ii = i * 4
       const newValue = state[i]
@@ -85,13 +78,7 @@ export class GOL {
       rgba[ii + 2] = newValue
       rgba[ii + 3] = 255
     }
-    this.textures.front.subset(
-      rgba,
-      0,
-      0,
-      this.stateSize[0],
-      this.stateSize[1],
-    )
+    this.textures.front.subset(rgba, 0, 0, this.stateSize[0], this.stateSize[1])
     return this
   }
 
@@ -113,9 +100,7 @@ export class GOL {
    * Clear the simulation state to empty.
    */
   setEmpty = () => {
-    this.setState(
-      new Uint8Array(this.stateSize[0] * this.stateSize[1]),
-    )
+    this.setState(new Uint8Array(this.stateSize[0] * this.stateSize[1]))
     return this
   }
 

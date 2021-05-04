@@ -29,14 +29,8 @@ function calculateOffsetForZoom(
   ])
 }
 
-export const GameCanvas = React.forwardRef<
-  HTMLCanvasElement,
-  GameCanvasProps
->(
-  (
-    { cellSize, setCellSize, offset, setOffset, gameOfLifeRef },
-    ref,
-  ) => {
+export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
+  ({ cellSize, setCellSize, offset, setOffset, gameOfLifeRef }, ref) => {
     const viewportCellLeft = offset[0]
     const viewportCellTop = offset[1]
 
@@ -55,9 +49,7 @@ export const GameCanvas = React.forwardRef<
       lastDraggedFramePosition,
       setLastDraggedFramePosition,
     ] = React.useState<Point | null>(null)
-    const [drawMode, setDrawMode] = React.useState<DrawMode>(
-      'not-drawing',
-    )
+    const [drawMode, setDrawMode] = React.useState<DrawMode>('not-drawing')
     const [mouseX, setMouseX] = React.useState<number | null>(null)
     const [mouseY, setMouseY] = React.useState<number | null>(null)
 
@@ -82,9 +74,7 @@ export const GameCanvas = React.forwardRef<
     const onMouseDown = React.useCallback(
       (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (gameOfLifeRef.current != null) {
-          const x = Math.floor(
-            e.clientX / cellSize + viewportCellLeft,
-          )
+          const x = Math.floor(e.clientX / cellSize + viewportCellLeft)
           const y = Math.floor(e.clientY / cellSize + viewportCellTop)
 
           const currentValue = gameOfLifeRef.current.getCell(x, y)
@@ -96,21 +86,13 @@ export const GameCanvas = React.forwardRef<
           setLastDraggedFramePosition({ x: x, y: y })
         }
       },
-      [
-        drawMode,
-        cellSize,
-        viewportCellLeft,
-        viewportCellTop,
-        gameOfLifeRef,
-      ],
+      [drawMode, cellSize, viewportCellLeft, viewportCellTop, gameOfLifeRef],
     )
 
     const onMouseMove = React.useCallback(
       (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (gameOfLifeRef.current != null) {
-          const x = Math.floor(
-            e.clientX / cellSize + viewportCellLeft,
-          )
+          const x = Math.floor(e.clientX / cellSize + viewportCellLeft)
           const y = Math.floor(e.clientY / cellSize + viewportCellTop)
 
           // TODO: support haypixels
@@ -145,10 +127,7 @@ export const GameCanvas = React.forwardRef<
       ],
     )
 
-    const onMouseUp = React.useCallback(
-      () => setDrawMode('not-drawing'),
-      [],
-    )
+    const onMouseUp = React.useCallback(() => setDrawMode('not-drawing'), [])
 
     const onWheel = React.useCallback(
       (e: WheelEvent) => {
@@ -159,13 +138,7 @@ export const GameCanvas = React.forwardRef<
             Math.max(0.5, cellSize + (cellSize * -e.deltaY) / 100),
           )
           setOffset((v) =>
-            calculateOffsetForZoom(
-              e.x,
-              e.y,
-              v,
-              cellSize,
-              newCellSize,
-            ),
+            calculateOffsetForZoom(e.x, e.y, v, cellSize, newCellSize),
           )
           setCellSize(newCellSize)
 
@@ -204,10 +177,8 @@ export const GameCanvas = React.forwardRef<
             setOffset(
               (v) =>
                 new Float32Array([
-                  roundToHaypixel(v[0] * cellSize, cellSize < 1) /
-                    cellSize,
-                  roundToHaypixel(v[1] * cellSize, cellSize < 1) /
-                    cellSize,
+                  roundToHaypixel(v[0] * cellSize, cellSize < 1) / cellSize,
+                  roundToHaypixel(v[1] * cellSize, cellSize < 1) / cellSize,
                 ]),
             )
           }, 500)

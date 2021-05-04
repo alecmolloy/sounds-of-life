@@ -96,10 +96,7 @@ export const Controls = ({
             >
               Generate
             </button>
-            <button
-              style={{ marginRight: '1em' }}
-              onClick={onRunClick}
-            >
+            <button style={{ marginRight: '1em' }} onClick={onRunClick}>
               {live ? 'Pause' : 'Run'}
             </button>
             Speed (ms):
