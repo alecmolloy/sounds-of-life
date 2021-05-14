@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { GridShowState } from './game-of-life'
 import { preventDefault } from './utils'
 
 interface ControlsProps {
@@ -11,8 +12,9 @@ interface ControlsProps {
   setSpeed: React.Dispatch<React.SetStateAction<number>>
   count: number
   cellSize: number
-  setCellSize: (v: number) => void
   offset: Float32Array
+  showGrid: GridShowState
+  setShowGrid: React.Dispatch<React.SetStateAction<GridShowState>>
 }
 export const Controls = ({
   runGeneration,
@@ -22,26 +24,15 @@ export const Controls = ({
   setSpeed,
   count,
   cellSize,
-  setCellSize,
   showControls,
   setShowControls,
   offset,
+  showGrid,
+  setShowGrid,
 }: ControlsProps) => {
   const onGenerateClick = React.useCallback(() => {
     runGeneration()
   }, [runGeneration])
-
-  // const onClearClick = React.useCallback(() => {
-  //   setGrid(emptyGrid())
-  // }, [setGrid])
-
-  // const onSoupClick = React.useCallback(() => {
-  //   setGrid(soup(0, 0, 100, 100))
-  // }, [setGrid])
-
-  // const onBlinkerClick = React.useCallback(() => {
-  //   setGrid(blinker())
-  // }, [setGrid])
 
   const onRunClick = React.useCallback(() => {
     setLive((v) => !v)
@@ -108,24 +99,6 @@ export const Controls = ({
             />
           </div>
           <div style={{ marginTop: '1em' }}>
-            {/* <button
-              style={{ marginRight: '1em' }}
-              onClick={onClearClick}
-            >
-              Clear
-            </button>
-            <button
-              style={{ marginRight: '1em' }}
-              onClick={onSoupClick}
-            >
-              Random Soup
-            </button>
-            <button
-              style={{ marginRight: '1em' }}
-              onClick={onBlinkerClick}
-            >
-              Blinker
-            </button> */}
             <div style={{ display: 'flex', gap: 10 }}>
               <div>Count: {count}</div>
               <div>Cell Size: {cellSize.toFixed(0)}px</div>
@@ -134,6 +107,19 @@ export const Controls = ({
                 {Number(offset[1].toFixed(2))})
               </div>
             </div>
+          </div>
+          <div style={{ marginTop: '1em' }}>
+            Show grid:
+            <select
+              onChange={(e) => {
+                setShowGrid(Number(e.target.value) as GridShowState)
+              }}
+              value={showGrid}
+            >
+              <option value={GridShowState.auto}>auto</option>
+              <option value={GridShowState.off}>off</option>
+              <option value={GridShowState.on}>on</option>
+            </select>
           </div>
         </>
       ) : (

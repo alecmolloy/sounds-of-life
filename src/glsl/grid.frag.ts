@@ -9,6 +9,7 @@ uniform vec2 stateSize;
 uniform vec2 offset;
 uniform vec2 u_resolution;
 uniform float devicePixelRatio;
+uniform int showGrid;
 
 const vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
 const vec4 gridLineEmphasized = vec4(0.5, 0.5, 0.5, 1.0);
@@ -39,7 +40,7 @@ void main() {
 
     // Draw grid
     vec3 grid = vec3(0.0);
-    if (cellSize >= 10.0) {
+    if (showGrid != 0 && (showGrid == 2 || cellSize >= 10.0)) {
         float x = gridShaping(screenCoordOffset.x, 1.0, 0.15);
         float y = gridShaping(screenCoordOffset.y, 1.0, 0.15);
         vec3 xy = vec3(max(x, y));

@@ -4,7 +4,7 @@ import Dropzone from 'react-dropzone'
 import { Helmet } from 'react-helmet'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
-import { GOL } from './game-of-life'
+import { GOL, GridShowState } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 
@@ -22,6 +22,9 @@ export const SoundsOfLife = () => {
   const [offset, setReactOffset] = React.useState(new Float32Array([0, 0]))
   const [cellSize, setReactCellSize] = React.useState(10)
   const [showControls, setShowControls] = React.useState(true)
+  const [showGrid, setReactShowGrid] = React.useState<GridShowState>(
+    GridShowState.auto,
+  )
 
   const step = React.useCallback(() => {
     gameOfLifeRef.current?.step()
@@ -67,6 +70,22 @@ export const SoundsOfLife = () => {
             : setStateAction
         if (gameOfLifeRef.current != null) {
           gameOfLifeRef.current.offset = newValue
+        }
+        return newValue
+      })
+    },
+    [],
+  )
+
+  const setShowGrid = React.useCallback(
+    (setStateAction: React.SetStateAction<GridShowState>) => {
+      setReactShowGrid((oldV) => {
+        const newValue =
+          typeof setStateAction === 'function'
+            ? setStateAction(oldV)
+            : setStateAction
+        if (gameOfLifeRef.current != null) {
+          gameOfLifeRef.current.showGrid = newValue
         }
         return newValue
       })
@@ -126,7 +145,7 @@ export const SoundsOfLife = () => {
               setCount={setCount}
               setCellSize={setCellSize}
               setSpeed={setSpeed}
-              setOffset={setReactOffset}
+              setOffset={setOffset}
               setShowControls={setShowControls}
             >
               <GameCanvas
@@ -149,7 +168,8 @@ export const SoundsOfLife = () => {
               speed={speed}
               setSpeed={setSpeed}
               cellSize={cellSize}
-              setCellSize={setCellSize}
+              showGrid={showGrid}
+              setShowGrid={setShowGrid}
             />
           </div>
         )}

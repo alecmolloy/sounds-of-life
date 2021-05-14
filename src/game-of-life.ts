@@ -3,6 +3,12 @@ import quad from './glsl/quad.vert'
 import gol from './glsl/gol.frag'
 import grid from './glsl/grid.frag'
 
+export enum GridShowState {
+  off,
+  on,
+  auto,
+}
+
 /**
  * Game of Life simulation and display.
  * @param {HTMLCanvasElement} canvas Render target
@@ -18,6 +24,7 @@ export class GOL {
   textures: { front: Texture; back: Texture }
   framebuffers: { step: Framebuffer }
   offset: Float32Array
+  showGrid: 0 | 1 | 2
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -26,6 +33,7 @@ export class GOL {
     renderHeight: number,
     boardWidth: number = 2 ** 12,
     boardHeight: number = 2 ** 12,
+    showGrid: GridShowState = GridShowState.auto,
   ) {
     this.igloo = new Igloo(canvas)
     const gl = this.igloo.gl
@@ -36,6 +44,7 @@ export class GOL {
     this.viewSize = new Float32Array([renderWidth, renderHeight])
     this.stateSize = new Float32Array([boardWidth, boardHeight])
     this.offset = new Float32Array([0, 0])
+    this.showGrid = showGrid
 
     gl.disable(gl.DEPTH_TEST)
     this.programs = {
@@ -148,7 +157,9 @@ export class GOL {
       .uniform('offset', this.offset)
       .uniform('devicePixelRatio', window.devicePixelRatio)
       .uniform('u_resolution', this.viewSize)
+      .uniformi('showGrid', this.showGrid)
       .draw(gl.TRIANGLE_STRIP, 4)
+    console.log(this.showGrid)
     return this
   }
 
