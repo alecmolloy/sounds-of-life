@@ -40,7 +40,7 @@ void main() {
 
     // Draw grid
     vec3 grid = vec3(0.0);
-    if (showGrid != 0 && (showGrid == 2 || cellSize >= 10.0)) {
+    if (showGrid != 0 && (showGrid == 1 || cellSize >= 10.0)) {
         float x = gridShaping(screenCoordOffset.x, 1.0, 0.15);
         float y = gridShaping(screenCoordOffset.y, 1.0, 0.15);
         vec3 xy = vec3(max(x, y));
