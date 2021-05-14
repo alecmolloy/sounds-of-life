@@ -53,7 +53,6 @@ export const parseRLEAndUpdateBoard = (
     const parsedGOLCells = parsed.find(
       (item): item is Cells => item.type === 'lines',
     )
-    debugger
     if (parsedGOLCells != null) {
       const width = gameOfLife.stateSize[0]
       const height = gameOfLife.stateSize[0]
