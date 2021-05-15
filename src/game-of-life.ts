@@ -1,7 +1,7 @@
 import Igloo, { Buffer, Framebuffer, Program, Texture } from './libs/igloo-ts'
+import grid from './glsl/grid.frag'
 import quad from './glsl/quad.vert'
 import gol from './glsl/gol.frag'
-import grid from './glsl/grid.frag'
 
 export enum GridShowState {
   off,
@@ -159,7 +159,6 @@ export class GOL {
       .uniform('u_resolution', this.viewSize)
       .uniformi('showGrid', this.showGrid)
       .draw(gl.TRIANGLE_STRIP, 4)
-    console.log(this.showGrid)
     return this
   }
 
