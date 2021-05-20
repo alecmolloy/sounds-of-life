@@ -4,10 +4,11 @@ import Dropzone from 'react-dropzone'
 import { Helmet } from 'react-helmet'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
-import { GOL, GridShowState } from './game-of-life'
+import { GOL, GridShowState } from './game-of-life-igloo'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 
+// TODO: move off of Igloo to str8 WebGL
 // TODO: maybe allow users to change size of board, check to see if it is lossy
 // TODO: change board size if RLE is too big, warn users
 // TODO: a nice UI

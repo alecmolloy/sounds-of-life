@@ -46,9 +46,8 @@ export class Program {
         return shader
       } else {
         console.error(source)
-        throw new Error(
-          gl.getShaderInfoLog(shader) ?? 'Shader failed to compile',
-        )
+        const err = gl.getShaderInfoLog(shader)
+        throw new Error(err == null ? 'Shader failed to compile' : err)
       }
     } else {
       throw new Error('shader not able to be created')
@@ -75,13 +74,16 @@ export class Program {
       | Array<number>
       | boolean
       | ArrayBufferView
-      | Float32Array = null,
+      | Float32Array
+      | null = null,
     i: boolean = false,
   ): Program {
     if (value == null) {
       this.vars[name] = this.gl.getUniformLocation(this.program, name)
     } else {
-      if (this.vars[name] == null) this.uniform(name)
+      if (this.vars[name] == null) {
+        this.uniform(name)
+      }
       const v = this.vars[name]
       if (Igloo.isArray(value)) {
         const method = 'uniform' + value.length + (i ? 'i' : 'f') + 'v'
@@ -155,7 +157,9 @@ export class Program {
     if (value == null) {
       this.vars[name] = gl.getAttribLocation(this.program, name)
     } else {
-      if (this.vars[name] == null) this.attrib(name) // get location
+      if (this.vars[name] == null) {
+        this.attrib(name)
+      } // get location
       value.bind()
       gl.enableVertexAttribArray(this.vars[name] as any)
       gl.vertexAttribPointer(
@@ -563,10 +567,12 @@ export class Framebuffer {
    */
   constructor(
     private gl: WebGLRenderingContext,
-    framebuffer?: WebGLFramebuffer,
+    framebuffer = gl.createFramebuffer(),
   ) {
-    this.framebuffer =
-      arguments.length == 2 ? framebuffer : gl.createFramebuffer()
+    if (framebuffer == null) {
+      throw new Error('FrameBuffer could not be initialized')
+    }
+    this.framebuffer = framebuffer
     this.renderbuffer = null
   }
 
