@@ -81,7 +81,7 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           if (drawMode === 'not-drawing') {
             const newValue = !currentValue
             setDrawMode(newValue ? 'insert-cell' : 'erase')
-            gameOfLifeRef.current.setCell(x, y, newValue)
+            // gameOfLifeRef.current.setCell(x, y, newValue)
           }
           setLastDraggedFramePosition({ x: x, y: y })
         }
