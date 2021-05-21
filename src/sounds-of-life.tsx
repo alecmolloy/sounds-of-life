@@ -4,7 +4,7 @@ import Dropzone from 'react-dropzone'
 import { Helmet } from 'react-helmet'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
-import { GOL, GridShowState } from './game-of-life-igloo'
+import { GOL, GridShowState } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 

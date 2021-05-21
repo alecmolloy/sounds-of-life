@@ -28,7 +28,7 @@ export class GOL {
   textures: { front: WebGLTexture; back: WebGLTexture }
   framebuffers: {
     step: WebGLFramebuffer
-    defaultFrameBuffer: WebGLFramebuffer
+    defaultFrameBuffer: null
   }
 
   constructor(
@@ -53,6 +53,7 @@ export class GOL {
     this.showGrid = showGrid
 
     gl.disable(gl.DEPTH_TEST)
+
     this.programs = {
       grid: createSimpleProgram(gl, quad, grid),
       gol: createSimpleProgram(gl, quad, gol),
@@ -76,22 +77,42 @@ export class GOL {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
+    gl.bindTexture(gl.TEXTURE_2D, front)
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      this.stateSize[0],
+      this.stateSize[1],
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      null,
+    )
+
     const back = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, back)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+    gl.bindTexture(gl.TEXTURE_2D, back)
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      this.stateSize[0],
+      this.stateSize[1],
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      null,
+    )
 
     const step = gl.createFramebuffer()
-    const defaultFrameBuffer = gl.createFramebuffer()
+    const defaultFrameBuffer = null
 
-    if (
-      front == null ||
-      back == null ||
-      step == null ||
-      defaultFrameBuffer == null
-    ) {
+    if (front == null || back == null || step == null) {
       throw Error('Could not create quadBuffer!')
     }
 
@@ -103,8 +124,8 @@ export class GOL {
       step,
       defaultFrameBuffer,
     }
-    // hmm
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers.step)
+    // // hmm
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers.step)
     window.GOL = this
   }
 
@@ -152,7 +173,7 @@ export class GOL {
     )
 
     const rgba = new Uint8Array(w * h * 4)
-    this.gl.readPixels(0, 0, w, h, this.gl.RGBA, this.gl.UNSIGNED_BYTE, rgba)
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, rgba)
     const state = new Uint8Array(w * h)
     for (let i = 0; i < w * h; i++) {
       state[i] = rgba[i * 4]
@@ -172,18 +193,20 @@ export class GOL {
    * Swap the texture buffers.
    */
   swap = () => {
-    const tmp = this.textures.front
-    this.textures.front = this.textures.back
-    this.textures.back = tmp
-    return this
+    this.textures = {
+      ...this.textures,
+      front: this.textures.back,
+      back: this.textures.front,
+    }
   }
 
   /**
    * Step the Game of Life state on the GPU without rendering anything.
    */
   step = () => {
+    console.log('stepping')
     const { gl } = this
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffers.step)
+    gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffers.step)
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -192,9 +215,11 @@ export class GOL {
       0,
     )
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.textures.front)
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.front)
 
     gl.viewport(0, 0, this.stateSize[0], this.stateSize[1])
+
     gl.useProgram(this.programs.gol)
 
     const quadLocation = gl.getAttribLocation(this.programs.gol, 'quad')
@@ -300,7 +325,7 @@ export class GOL {
   setCell = (x: number, y: number, newValue: boolean) => {
     const { gl } = this
     const v = newValue ? 255 : 0
-
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.front)
     gl.texSubImage2D(
       gl.TEXTURE_2D,
       0,
@@ -308,9 +333,9 @@ export class GOL {
       GOL.wrap(y, this.stateSize[1]),
       1,
       1,
-      gl.RGB,
+      gl.RGBA,
       gl.UNSIGNED_BYTE,
-      new Uint8Array([v, v, v]),
+      new Uint8Array([v, v, v, 255]),
     )
   }
 
@@ -319,7 +344,7 @@ export class GOL {
    */
   getCell = (x: number, y: number): boolean => {
     const { gl } = this
-    const rgb = new Uint8Array(3)
+    const rgba = new Uint8Array(4)
     gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffers.step)
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
@@ -328,20 +353,17 @@ export class GOL {
       this.textures.front,
       0,
     )
-    // framebuffer is incomplete comes from readPixels.
-    // everything here looks good, i think there is something
-    // wrong with the framebuffer, or maybe texture.
+    console.log(gl.checkFramebufferStatus(gl.FRAMEBUFFER))
     gl.readPixels(
       GOL.wrap(x, this.stateSize[0]),
       GOL.wrap(y, this.stateSize[1]),
       1,
       1,
-      gl.RGB,
+      gl.RGBA,
       gl.UNSIGNED_BYTE,
-      rgb,
+      rgba,
     )
-    console.log(this.framebuffers.step, this.textures.front)
 
-    return rgb[0] === 255
+    return rgba[0] === 255
   }
 }
