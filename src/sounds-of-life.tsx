@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import { useInterval } from 'beautiful-react-hooks'
 import * as React from 'react'
 import Dropzone from 'react-dropzone'
@@ -7,11 +8,13 @@ import { GameCanvas } from './game-canvas'
 import { GOL, GridShowState } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
+import { CanvasMode, Selection2D } from './utils'
 
-// TODO: move off of Igloo to str8 WebGL
 // TODO: maybe allow users to change size of board, check to see if it is lossy
 // TODO: change board size if RLE is too big, warn users
 // TODO: a nice UI
+// TODO: fix pinch to zoom on safari: https://dev.to/danburzo/pinch-me-i-m-zooming-gestures-in-the-dom-a0e
+// TODO: figure out why chrome goes @1x suddenly while resizing or after swapping windows
 
 export const SoundsOfLife = () => {
   const gameOfLifeRef = React.useRef<GOL>()
@@ -23,9 +26,9 @@ export const SoundsOfLife = () => {
   const [offset, setReactOffset] = React.useState(new Float32Array([0, 0]))
   const [cellSize, setReactCellSize] = React.useState(10)
   const [showControls, setShowControls] = React.useState(true)
-  const [showGrid, setReactShowGrid] = React.useState<GridShowState>(
-    GridShowState.auto,
-  )
+  const [showGrid, setReactShowGrid] = React.useState(GridShowState.auto)
+  const [selection, setSelection] = React.useState<Selection2D | null>(null)
+  const [mode, setMode] = React.useState<CanvasMode>('selection-default')
 
   const step = React.useCallback(() => {
     gameOfLifeRef.current?.step()
@@ -148,6 +151,8 @@ export const SoundsOfLife = () => {
               setSpeed={setSpeed}
               setOffset={setOffset}
               setShowControls={setShowControls}
+              setMode={setMode}
+              setSelection={setSelection}
             >
               <GameCanvas
                 ref={canvasRef}
@@ -156,6 +161,10 @@ export const SoundsOfLife = () => {
                 setOffset={setOffset}
                 cellSize={cellSize}
                 setCellSize={setCellSize}
+                mode={mode}
+                setMode={setMode}
+                selection={selection}
+                setSelection={setSelection}
               />
             </KeyboardShortcuts>
             <Controls

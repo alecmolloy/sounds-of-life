@@ -204,7 +204,6 @@ export class GOL {
    * Step the Game of Life state on the GPU without rendering anything.
    */
   step = () => {
-    console.log('stepping')
     const { gl } = this
     gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffers.step)
     gl.framebufferTexture2D(
@@ -353,7 +352,6 @@ export class GOL {
       this.textures.front,
       0,
     )
-    console.log(gl.checkFramebufferStatus(gl.FRAMEBUFFER))
     gl.readPixels(
       GOL.wrap(x, this.stateSize[0]),
       GOL.wrap(y, this.stateSize[1]),

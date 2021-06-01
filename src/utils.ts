@@ -7,10 +7,7 @@ export const preventDefault = (e: { preventDefault: () => void }) => {
   e.preventDefault()
 }
 
-export function roundToHaypixel(
-  value: number,
-  roundToInt: boolean,
-): number {
+export function roundToHaypixel(value: number, roundToInt: boolean): number {
   if (roundToInt) {
     return Math.round(value)
   } else {
@@ -34,4 +31,54 @@ export function getRenderSize(): [number, number] {
     Math.round(window.innerWidth * window.devicePixelRatio),
     Math.round(window.innerHeight * window.devicePixelRatio),
   ]
+}
+
+export interface Selection2D {
+  left: number
+  top: number
+  right: number
+  bottom: number
+  height: () => number
+  width: () => number
+  originX: number
+  originY: number
+}
+export const selection2D = (
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  originX: number,
+  originY: number,
+) => ({
+  left,
+  top,
+  right,
+  bottom,
+  width: () => right - left,
+  height: () => bottom - top,
+  originX,
+  originY,
+})
+
+export type CanvasMode =
+  | 'drawing-insert-cell'
+  | 'drawing-erase'
+  | 'drawing-default'
+  | 'selection-selecting'
+  | 'selection-default'
+
+export function modeIsDrawing(
+  mode: CanvasMode,
+): mode is 'drawing-insert-cell' | 'drawing-erase' | 'drawing-default' {
+  return (
+    mode === 'drawing-insert-cell' ||
+    mode === 'drawing-erase' ||
+    mode === 'drawing-default'
+  )
+}
+export function modeIsSelecting(
+  mode: CanvasMode,
+): mode is 'selection-selecting' | 'selection-default' {
+  return mode === 'selection-selecting' || mode === 'selection-default'
 }

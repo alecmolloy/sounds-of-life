@@ -1,9 +1,16 @@
 import * as React from 'react'
 import { bresenhamLine } from './bresenham-line'
 import { GOL } from './game-of-life'
-import { getRenderSize, Point, roundToHaypixel } from './utils'
-
-type DrawMode = 'insert-cell' | 'erase' | 'not-drawing'
+import {
+  CanvasMode,
+  getRenderSize,
+  modeIsDrawing,
+  modeIsSelecting as modeIsSelection,
+  Point,
+  roundToHaypixel,
+  Selection2D,
+  selection2D,
+} from './utils'
 
 interface GameCanvasProps {
   cellSize: number
@@ -11,6 +18,10 @@ interface GameCanvasProps {
   offset: Float32Array
   setOffset: React.Dispatch<React.SetStateAction<Float32Array>>
   gameOfLifeRef: React.MutableRefObject<GOL | undefined>
+  mode: CanvasMode
+  setMode: React.Dispatch<React.SetStateAction<CanvasMode>>
+  selection: Selection2D | null
+  setSelection: React.Dispatch<React.SetStateAction<Selection2D | null>>
 }
 
 function calculateOffsetForZoom(
@@ -29,8 +40,34 @@ function calculateOffsetForZoom(
   ])
 }
 
+function getAndSetNewMode(
+  mode: CanvasMode,
+  setMode: React.Dispatch<React.SetStateAction<CanvasMode>>,
+  e: React.MouseEvent,
+): CanvasMode {
+  let newMode: CanvasMode = mode
+  if (e.metaKey || e.ctrlKey) {
+    newMode = 'drawing-default'
+  }
+  setMode(newMode)
+  return newMode
+}
+
 export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
-  ({ cellSize, setCellSize, offset, setOffset, gameOfLifeRef }, ref) => {
+  (
+    {
+      cellSize,
+      setCellSize,
+      offset,
+      setOffset,
+      gameOfLifeRef,
+      mode,
+      setMode,
+      selection,
+      setSelection,
+    },
+    ref,
+  ) => {
     const viewportCellLeft = offset[0]
     const viewportCellTop = offset[1]
 
@@ -45,11 +82,8 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
       window.innerHeight,
     ])
 
-    const [
-      lastDraggedFramePosition,
-      setLastDraggedFramePosition,
-    ] = React.useState<Point | null>(null)
-    const [drawMode, setDrawMode] = React.useState<DrawMode>('not-drawing')
+    const [lastDraggedFramePosition, setLastDraggedFramePosition] =
+      React.useState<Point | null>(null)
     const [mouseX, setMouseX] = React.useState<number | null>(null)
     const [mouseY, setMouseY] = React.useState<number | null>(null)
 
@@ -63,7 +97,7 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           newRenderHeight,
         ])
       }
-    }, [])
+    }, [gameOfLifeRef])
 
     React.useEffect(() => {
       onResize()
@@ -78,15 +112,34 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           const y = Math.floor(e.clientY / cellSize + viewportCellTop)
 
           const currentValue = gameOfLifeRef.current.getCell(x, y)
-          if (drawMode === 'not-drawing') {
-            const newValue = !currentValue
-            setDrawMode(newValue ? 'insert-cell' : 'erase')
-            // gameOfLifeRef.current.setCell(x, y, newValue)
+          const newMode = getAndSetNewMode(mode, setMode, e)
+          switch (newMode) {
+            case 'drawing-default': {
+              const newValue = !currentValue
+              setMode(newValue ? 'drawing-insert-cell' : 'drawing-erase')
+              break
+            }
+            case 'selection-default': {
+              setMode('selection-selecting')
+              setSelection(selection2D(x, y, x + 1, y + 1, x, y))
+              break
+            }
+            default: {
+              console.error(newMode)
+            }
           }
-          setLastDraggedFramePosition({ x: x, y: y })
+          setLastDraggedFramePosition({ x, y })
         }
       },
-      [drawMode, cellSize, viewportCellLeft, viewportCellTop, gameOfLifeRef],
+      [
+        mode,
+        cellSize,
+        viewportCellLeft,
+        viewportCellTop,
+        gameOfLifeRef,
+        setMode,
+        setSelection,
+      ],
     )
 
     const onMouseMove = React.useCallback(
@@ -98,36 +151,88 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           // TODO: support haypixels
           setMouseX(x)
           setMouseY(y)
-
-          if (drawMode === 'erase' || drawMode === 'insert-cell') {
-            const newValue = drawMode === 'insert-cell'
-            if (lastDraggedFramePosition != null) {
-              bresenhamLine(
-                lastDraggedFramePosition.x,
-                lastDraggedFramePosition.y,
-                x,
-                y,
-                newValue,
-                gameOfLifeRef.current,
-              )
-            } else {
-              gameOfLifeRef.current.setCell(x, y, newValue)
+          const newMode = getAndSetNewMode(mode, setMode, e)
+          switch (newMode) {
+            case 'drawing-default':
+            case 'selection-default': {
+              break
             }
-            setLastDraggedFramePosition({ x, y })
+            case 'drawing-erase':
+            case 'drawing-insert-cell': {
+              const newValue = newMode === 'drawing-insert-cell'
+              if (lastDraggedFramePosition != null) {
+                bresenhamLine(
+                  lastDraggedFramePosition.x,
+                  lastDraggedFramePosition.y,
+                  x,
+                  y,
+                  newValue,
+                  gameOfLifeRef.current,
+                )
+              } else {
+                gameOfLifeRef.current.setCell(x, y, newValue)
+              }
+              setLastDraggedFramePosition({ x, y })
+              break
+            }
+            case 'selection-selecting': {
+              if (selection !== null) {
+                const { newLeft, newRight } = (() => {
+                  if (x > selection.originX) {
+                    return { newLeft: selection.originX, newRight: x }
+                  } else {
+                    return { newLeft: x, newRight: selection.originX + 1 }
+                  }
+                })()
+                const { newTop, newBottom } = (() => {
+                  if (y > selection.originY) {
+                    return { newTop: selection.originY, newBottom: y }
+                  } else {
+                    return { newTop: y, newBottom: selection.originY + 1 }
+                  }
+                })()
+                setSelection(
+                  selection2D(
+                    newLeft,
+                    newTop,
+                    newRight,
+                    newBottom,
+                    selection.originX,
+                    selection.originY,
+                  ),
+                )
+              } else {
+                throw new Error('Selection not set')
+              }
+              break
+            }
+            default: {
+              const _exhaustiveCheck: never = newMode
+              throw new Error(`${_exhaustiveCheck} not accounted for`)
+            }
           }
         }
       },
       [
-        drawMode,
+        mode,
         lastDraggedFramePosition,
         cellSize,
         viewportCellLeft,
         viewportCellTop,
         gameOfLifeRef,
+        setSelection,
       ],
     )
 
-    const onMouseUp = React.useCallback(() => setDrawMode('not-drawing'), [])
+    const onMouseUp = React.useCallback(() => {
+      if (modeIsDrawing(mode)) {
+        setMode('drawing-default')
+      } else if (modeIsSelection(mode)) {
+        setMode('selection-default')
+      } else {
+        const fallthrough: never = mode
+      }
+    }, [])
 
     const onWheel = React.useCallback(
       (e: WheelEvent) => {
@@ -145,7 +250,7 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           if (zoomTimeoutID.current != null) {
             clearTimeout(zoomTimeoutID.current)
           }
-          zoomTimeoutID.current = setTimeout(() => {
+          zoomTimeoutID.current = window.setTimeout(() => {
             const targetNewCellSize = roundToHaypixel(
               newCellSize,
               newCellSize > 1,
@@ -173,7 +278,7 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           if (scrollTimeoutID.current != null) {
             clearTimeout(scrollTimeoutID.current)
           }
-          scrollTimeoutID.current = setTimeout(() => {
+          scrollTimeoutID.current = window.setTimeout(() => {
             setOffset(
               (v) =>
                 new Float32Array([
@@ -215,7 +320,7 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           style={{
-            cursor: 'crosshair',
+            cursor: modeIsDrawing(mode) ? 'crosshair' : 'cell',
             width: canvasStyleSize[0],
             height: canvasStyleSize[1],
           }}
@@ -237,6 +342,21 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           >
             ({mouseX}, {mouseY})
           </div>
+        ) : null}
+        {selection != null ? (
+          <div
+            style={{
+              width: selection.width() * cellSize + 1,
+              height: selection.height() * cellSize + 1,
+              left: (-offset[0] + selection.left) * cellSize,
+              top: (-offset[1] + selection.top) * cellSize,
+              pointerEvents: 'none',
+              backgroundColor: '#0f02',
+              boxShadow: '0 0 0 0.5px #0f06 inset',
+              position: 'absolute',
+              boxSizing: 'border-box',
+            }}
+          />
         ) : null}
       </>
     )

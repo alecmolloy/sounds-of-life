@@ -8,9 +8,7 @@ export function bresenhamLine(
   y1: number,
   newValue: boolean,
   gameOfLife: GOL,
-): GOL {
-  let workingGrid = gameOfLife
-
+): void {
   const deltaX = Math.abs(x1 - x0)
   const stepX = x0 < x1 ? 1 : -1
   const deltaY = -Math.abs(y1 - y0)
@@ -18,7 +16,7 @@ export function bresenhamLine(
 
   let error = deltaX + deltaY
   while (true) {
-    workingGrid = gameOfLife.setCell(x0, y0, newValue)
+    gameOfLife.setCell(x0, y0, newValue)
     if (x0 === x1 && y0 === y1) {
       break
     }
@@ -32,5 +30,4 @@ export function bresenhamLine(
       y0 += stepY
     }
   }
-  return workingGrid
 }

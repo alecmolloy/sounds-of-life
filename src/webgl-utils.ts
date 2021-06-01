@@ -54,7 +54,7 @@ export function createSimpleProgram(
   )
   gl.linkProgram(program)
   if (gl.getProgramParameter(program, gl.LINK_STATUS) !== true) {
-    throw new Error(gl.getProgramInfoLog(program))
+    throw new Error(gl.getProgramInfoLog(program) ?? 'Could not create program')
   } else {
     return program
   }
