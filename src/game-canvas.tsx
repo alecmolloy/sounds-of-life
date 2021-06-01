@@ -47,7 +47,17 @@ function getAndSetNewMode(
 ): CanvasMode {
   let newMode: CanvasMode = mode
   if (e.metaKey || e.ctrlKey) {
-    newMode = 'drawing-default'
+    switch (mode) {
+      case 'selection-selecting': {
+        newMode = 'drawing-insert-cell'
+        break
+      }
+      case 'selection-default':
+      case 'selection-selecting': {
+        newMode = 'drawing-default'
+        break
+      }
+    }
   }
   setMode(newMode)
   return newMode
@@ -152,6 +162,7 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           setMouseX(x)
           setMouseY(y)
           const newMode = getAndSetNewMode(mode, setMode, e)
+          console.log(newMode)
           switch (newMode) {
             case 'drawing-default':
             case 'selection-default': {
@@ -348,8 +359,8 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
             style={{
               width: selection.width() * cellSize + 1,
               height: selection.height() * cellSize + 1,
-              left: (-offset[0] + selection.left) * cellSize,
-              top: (-offset[1] + selection.top) * cellSize,
+              left: (-viewportCellLeft + selection.left) * cellSize,
+              top: (-viewportCellTop + selection.top) * cellSize,
               pointerEvents: 'none',
               backgroundColor: '#0f02',
               boxShadow: '0 0 0 0.5px #0f06 inset',

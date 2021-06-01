@@ -10,6 +10,7 @@ import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 import { CanvasMode, Selection2D } from './utils'
 
+// TODO: fix selection so it turns off when drawing + make sure mousedown works properly with "newMode"
 // TODO: maybe allow users to change size of board, check to see if it is lossy
 // TODO: change board size if RLE is too big, warn users
 // TODO: a nice UI
