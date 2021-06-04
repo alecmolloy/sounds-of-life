@@ -50,7 +50,7 @@ export const selection2D = (
   bottom: number,
   originX: number,
   originY: number,
-) => ({
+): Selection2D => ({
   left,
   top,
   right,

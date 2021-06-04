@@ -1,33 +1,32 @@
-import * as React from 'react'
-import { CanvasMode, Selection2D } from './utils'
+import React from 'react'
+import Recoil from 'recoil'
+import {
+  cellSizeState,
+  countState,
+  liveState,
+  modeState,
+  offsetState,
+  selectionState,
+  showControlsState,
+  speedState,
+} from './state'
 
 interface KeyboardShortcutsProps {
   live: boolean
   runGeneration: () => void
-  setLive: React.Dispatch<React.SetStateAction<boolean>>
-  setCount: React.Dispatch<React.SetStateAction<number>>
-  setCellSize: React.Dispatch<React.SetStateAction<number>>
-  setSpeed: React.Dispatch<React.SetStateAction<number>>
-  setOffset: React.Dispatch<React.SetStateAction<Float32Array>>
-  setShowControls: React.Dispatch<React.SetStateAction<boolean>>
-  setMode: React.Dispatch<React.SetStateAction<CanvasMode>>
-  setSelection: React.Dispatch<React.SetStateAction<Selection2D | null>>
 }
 
 export const KeyboardShortcuts: React.FunctionComponent<KeyboardShortcutsProps> =
-  ({
-    live,
-    setLive,
-    runGeneration,
-    setCount,
-    setCellSize,
-    setSpeed,
-    setOffset,
-    setShowControls,
-    children,
-    setMode,
-    setSelection,
-  }) => {
+  ({ live, runGeneration, children }) => {
+    const setSelection = Recoil.useSetRecoilState(selectionState)
+    const setLive = Recoil.useSetRecoilState(liveState)
+    const setCount = Recoil.useSetRecoilState(countState)
+    const setCellSize = Recoil.useSetRecoilState(cellSizeState)
+    const setSpeed = Recoil.useSetRecoilState(speedState)
+    const setOffset = Recoil.useSetRecoilState(offsetState)
+    const setShowControls = Recoil.useSetRecoilState(showControlsState)
+    const setMode = Recoil.useSetRecoilState(modeState)
+
     const onKeyDown = (e: React.KeyboardEvent) => {
       switch (e.code) {
         case 'MetaLeft':

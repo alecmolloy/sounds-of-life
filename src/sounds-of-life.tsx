@@ -1,14 +1,26 @@
-/// <reference lib="dom" />
 import { useInterval } from 'beautiful-react-hooks'
 import * as React from 'react'
 import Dropzone from 'react-dropzone'
 import { Helmet } from 'react-helmet'
+import Recoil from 'recoil'
 import { Controls } from './controls'
 import { GameCanvas } from './game-canvas'
 import { GOL, GridShowState } from './game-of-life'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
-import { CanvasMode, Selection2D } from './utils'
+import {
+  cellSizeState,
+  countState,
+  liveState,
+  modeState,
+  offsetState,
+  showControlsState,
+  showGridState,
+  speedState,
+} from './state'
+
+// TODO: rethink the whole state bridge between react and GOL, can this be done somehow?
+// maybe turn the GOL component into a react component?
 
 // TODO: fix selection so it turns off when drawing + make sure mousedown works properly with "newMode"
 // TODO: maybe allow users to change size of board, check to see if it is lossy
@@ -21,15 +33,12 @@ export const SoundsOfLife = () => {
   const gameOfLifeRef = React.useRef<GOL>()
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
-  const [count, setCount] = React.useState(0)
-  const [live, setLive] = React.useState(false)
-  const [speed, setSpeed] = React.useState(200)
-  const [offset, setReactOffset] = React.useState(new Float32Array([0, 0]))
-  const [cellSize, setReactCellSize] = React.useState(10)
-  const [showControls, setShowControls] = React.useState(true)
-  const [showGrid, setReactShowGrid] = React.useState(GridShowState.auto)
-  const [selection, setSelection] = React.useState<Selection2D | null>(null)
-  const [mode, setMode] = React.useState<CanvasMode>('selection-default')
+  const live = Recoil.useRecoilValue(liveState)
+  const speed = Recoil.useRecoilValue(speedState)
+  const setReactOffset = Recoil.useSetRecoilState(offsetState)
+  const setRecoilCellSize = Recoil.useSetRecoilState(cellSizeState)
+  Recoil.useRecoilState(showControlsState)
+  const setRecoilShowGrid = Recoil.useSetRecoilState(showGridState)
 
   const step = React.useCallback(() => {
     gameOfLifeRef.current?.step()
@@ -52,7 +61,7 @@ export const SoundsOfLife = () => {
 
   const setCellSize = React.useCallback(
     (setStateAction: React.SetStateAction<number>) => {
-      setReactCellSize((oldV) => {
+      setRecoilCellSize((oldV) => {
         const newValue =
           typeof setStateAction === 'function'
             ? setStateAction(oldV)
@@ -84,7 +93,7 @@ export const SoundsOfLife = () => {
 
   const setShowGrid = React.useCallback(
     (setStateAction: React.SetStateAction<GridShowState>) => {
-      setReactShowGrid((oldV) => {
+      setRecoilShowGrid((oldV) => {
         const newValue =
           typeof setStateAction === 'function'
             ? setStateAction(oldV)
@@ -143,45 +152,10 @@ export const SoundsOfLife = () => {
       >
         {({ getRootProps }) => (
           <div {...getRootProps()} style={{ outline: 'none' }}>
-            <KeyboardShortcuts
-              live={live}
-              runGeneration={step}
-              setLive={setLive}
-              setCount={setCount}
-              setCellSize={setCellSize}
-              setSpeed={setSpeed}
-              setOffset={setOffset}
-              setShowControls={setShowControls}
-              setMode={setMode}
-              setSelection={setSelection}
-            >
-              <GameCanvas
-                ref={canvasRef}
-                gameOfLifeRef={gameOfLifeRef}
-                offset={offset}
-                setOffset={setOffset}
-                cellSize={cellSize}
-                setCellSize={setCellSize}
-                mode={mode}
-                setMode={setMode}
-                selection={selection}
-                setSelection={setSelection}
-              />
+            <KeyboardShortcuts live={live} runGeneration={step}>
+              <GameCanvas ref={canvasRef} gameOfLifeRef={gameOfLifeRef} />
             </KeyboardShortcuts>
-            <Controls
-              offset={offset}
-              showControls={showControls}
-              setShowControls={setShowControls}
-              count={count}
-              runGeneration={step}
-              live={live}
-              setLive={setLive}
-              speed={speed}
-              setSpeed={setSpeed}
-              cellSize={cellSize}
-              showGrid={showGrid}
-              setShowGrid={setShowGrid}
-            />
+            <Controls runGeneration={step} />
           </div>
         )}
       </Dropzone>

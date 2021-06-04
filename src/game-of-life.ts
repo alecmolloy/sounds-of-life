@@ -1,8 +1,7 @@
+import gol from './glsl/gol.frag'
 import grid from './glsl/grid.frag'
 import quad from './glsl/quad.vert'
-import gol from './glsl/gol.frag'
 import { createSimpleProgram, QUAD2 } from './webgl-utils'
-import { WebGLDebugUtils } from './scripts/webgl-debug'
 
 export enum GridShowState {
   off,
@@ -40,7 +39,7 @@ export class GOL {
     boardHeight: number = 2 ** 12,
     showGrid: GridShowState = GridShowState.auto,
   ) {
-    const gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl'))
+    const gl = canvas.getContext('webgl')
     if (gl == null) {
       throw Error('Could not initialize WebGL!')
     }
@@ -124,8 +123,6 @@ export class GOL {
       step,
       defaultFrameBuffer,
     }
-    // // hmm
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers.step)
     window.GOL = this
   }
 

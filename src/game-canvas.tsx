@@ -1,27 +1,20 @@
 import * as React from 'react'
+import Recoil from 'recoil'
 import { bresenhamLine } from './bresenham-line'
 import { GOL } from './game-of-life'
+import { cellSizeState, modeState, offsetState, selectionState } from './state'
 import {
   CanvasMode,
   getRenderSize,
   modeIsDrawing,
-  modeIsSelecting as modeIsSelection,
+  modeIsSelecting,
   Point,
   roundToHaypixel,
-  Selection2D,
   selection2D,
 } from './utils'
 
 interface GameCanvasProps {
-  cellSize: number
-  setCellSize: React.Dispatch<React.SetStateAction<number>>
-  offset: Float32Array
-  setOffset: React.Dispatch<React.SetStateAction<Float32Array>>
   gameOfLifeRef: React.MutableRefObject<GOL | undefined>
-  mode: CanvasMode
-  setMode: React.Dispatch<React.SetStateAction<CanvasMode>>
-  selection: Selection2D | null
-  setSelection: React.Dispatch<React.SetStateAction<Selection2D | null>>
 }
 
 function calculateOffsetForZoom(
@@ -64,20 +57,12 @@ function getAndSetNewMode(
 }
 
 export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
-  (
-    {
-      cellSize,
-      setCellSize,
-      offset,
-      setOffset,
-      gameOfLifeRef,
-      mode,
-      setMode,
-      selection,
-      setSelection,
-    },
-    ref,
-  ) => {
+  ({ gameOfLifeRef }, ref) => {
+    const [cellSize, setCellSize] = Recoil.useRecoilState(cellSizeState)
+    const [offset, setOffset] = Recoil.useRecoilState(offsetState)
+    const [mode, setMode] = Recoil.useRecoilState(modeState)
+    const [selection, setSelection] = Recoil.useRecoilState(selectionState)
+
     const viewportCellLeft = offset[0]
     const viewportCellTop = offset[1]
 
@@ -130,8 +115,9 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
               break
             }
             case 'selection-default': {
-              setMode('selection-selecting')
               setSelection(selection2D(x, y, x + 1, y + 1, x, y))
+              setMode('selection-selecting')
+              console.log('selection is set')
               break
             }
             default: {
@@ -162,7 +148,6 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           setMouseX(x)
           setMouseY(y)
           const newMode = getAndSetNewMode(mode, setMode, e)
-          console.log(newMode)
           switch (newMode) {
             case 'drawing-default':
             case 'selection-default': {
@@ -190,14 +175,14 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
               if (selection !== null) {
                 const { newLeft, newRight } = (() => {
                   if (x > selection.originX) {
-                    return { newLeft: selection.originX, newRight: x }
+                    return { newLeft: selection.originX, newRight: x + 1 }
                   } else {
                     return { newLeft: x, newRight: selection.originX + 1 }
                   }
                 })()
                 const { newTop, newBottom } = (() => {
                   if (y > selection.originY) {
-                    return { newTop: selection.originY, newBottom: y }
+                    return { newTop: selection.originY, newBottom: y + 1 }
                   } else {
                     return { newTop: y, newBottom: selection.originY + 1 }
                   }
@@ -238,10 +223,10 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
     const onMouseUp = React.useCallback(() => {
       if (modeIsDrawing(mode)) {
         setMode('drawing-default')
-      } else if (modeIsSelection(mode)) {
+      } else if (modeIsSelecting(mode)) {
         setMode('selection-default')
       } else {
-        const fallthrough: never = mode
+        const _exhaustiveCheck: never = mode
       }
     }, [])
 
@@ -323,6 +308,9 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
       }
     }, [])
 
+    const selectionWidth = selection?.width() ?? 0
+    const selectionHeight = selection?.height() ?? 0
+
     return (
       <>
         <canvas
@@ -331,7 +319,11 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           style={{
-            cursor: modeIsDrawing(mode) ? 'crosshair' : 'cell',
+            cursor: modeIsSelecting(mode)
+              ? 'cell'
+              : `-webkit-image-set(
+              url(/icons/pencil@2x.png) 2x,
+              url(/icons/pencil@1x.png) 1x) 3 18, default`,
             width: canvasStyleSize[0],
             height: canvasStyleSize[1],
           }}
@@ -354,11 +346,11 @@ export const GameCanvas = React.forwardRef<HTMLCanvasElement, GameCanvasProps>(
             ({mouseX}, {mouseY})
           </div>
         ) : null}
-        {selection != null ? (
+        {selection != null && selectionWidth !== 0 && selectionHeight !== 0 ? (
           <div
             style={{
-              width: selection.width() * cellSize + 1,
-              height: selection.height() * cellSize + 1,
+              width: selectionWidth * cellSize,
+              height: selectionHeight * cellSize,
               left: (-viewportCellLeft + selection.left) * cellSize,
               top: (-viewportCellTop + selection.top) * cellSize,
               pointerEvents: 'none',

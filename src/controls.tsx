@@ -1,35 +1,31 @@
 import * as React from 'react'
+import Recoil from 'recoil'
 import { GridShowState } from './game-of-life'
+import {
+  cellSizeState,
+  countState,
+  liveState,
+  offsetState,
+  showControlsState,
+  showGridState,
+  speedState,
+} from './state'
 import { preventDefault } from './utils'
 
 interface ControlsProps {
-  showControls: boolean
-  setShowControls: React.Dispatch<React.SetStateAction<boolean>>
   runGeneration: () => void
-  live: boolean
-  setLive: React.Dispatch<React.SetStateAction<boolean>>
-  speed: number
-  setSpeed: React.Dispatch<React.SetStateAction<number>>
-  count: number
-  cellSize: number
-  offset: Float32Array
-  showGrid: GridShowState
-  setShowGrid: React.Dispatch<React.SetStateAction<GridShowState>>
 }
-export const Controls = ({
-  runGeneration,
-  live,
-  setLive,
-  speed,
-  setSpeed,
-  count,
-  cellSize,
-  showControls,
-  setShowControls,
-  offset,
-  showGrid,
-  setShowGrid,
-}: ControlsProps) => {
+export const Controls = ({ runGeneration }: ControlsProps) => {
+  const [showControls, setShowControls] =
+    Recoil.useRecoilState(showControlsState)
+  const [live, setLive] = Recoil.useRecoilState(liveState)
+  const [speed, setSpeed] = Recoil.useRecoilState(speedState)
+  const [showGrid, setShowGrid] = Recoil.useRecoilState(showGridState)
+
+  const offset = Recoil.useRecoilValue(offsetState)
+  const count = Recoil.useRecoilValue(countState)
+  const cellSize = Recoil.useRecoilValue(cellSizeState)
+
   const onGenerateClick = React.useCallback(() => {
     runGeneration()
   }, [runGeneration])
