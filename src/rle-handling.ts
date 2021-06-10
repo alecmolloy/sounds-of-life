@@ -1,8 +1,7 @@
 // thanks to ALEXANDER SHCHAPOV for his code here:
 // https://darednaxella.name/pages/writing-javascript-parser-for-rle-files/
 
-import React from 'react'
-import { GOL } from './game-of-life'
+import Recoil from 'recoil'
 // @ts-ignore
 import * as parser from './scripts/rle-parser'
 
@@ -43,19 +42,19 @@ type Line = Cells | Name | Author | Comment | Header | TopLeftCoordinates
 
 export const parseRLEAndUpdateBoard = (
   rleText: string,
-  gameOfLife: GOL,
-  setOffset: React.Dispatch<React.SetStateAction<Float32Array>>,
+  setBoardState: (state: Uint8Array) => void,
+  setOffset: Recoil.SetterOrUpdater<Float32Array>,
+  stateSize: Float32Array,
 ) => {
-  const parsed: Array<Line> = parser.parse(rleText)
-
+  const parsed = parser.parse(rleText) as Array<Line>
   if (Array.isArray(parsed)) {
     // Create new board state
     const parsedGOLCells = parsed.find(
       (item): item is Cells => item.type === 'lines',
     )
     if (parsedGOLCells != null) {
-      const width = gameOfLife.stateSize[0]
-      const height = gameOfLife.stateSize[0]
+      const width = stateSize[0]
+      const height = stateSize[1]
       const workingStateArray = new Uint8Array(width * height).fill(0)
       const cells = parsedGOLCells.items
 
@@ -80,24 +79,24 @@ export const parseRLEAndUpdateBoard = (
       const header = parsed.find((v): v is Header => v.type === 'header')
 
       // only set state if rule isn't defined or is GOL rule
-      if (header == null || header.rule == null) {
-        gameOfLife.setState(workingStateArray)
-      } else {
-        if (header.rule.toUpperCase() === 'B3/S23') {
-          gameOfLife.setState(workingStateArray)
-          const topLeftCoordinates = parsed.find(
-            (v): v is TopLeftCoordinates => v.type === 'topLeftCoordinates',
+      if (
+        header == null ||
+        header.rule == null ||
+        header.rule.toUpperCase() === 'B3/S23'
+      ) {
+        setBoardState(workingStateArray)
+        const topLeftCoordinates = parsed.find(
+          (v): v is TopLeftCoordinates => v.type === 'topLeftCoordinates',
+        )
+        if (topLeftCoordinates != null) {
+          setOffset(
+            new Float32Array([topLeftCoordinates.x, topLeftCoordinates.y]),
           )
-          if (topLeftCoordinates != null) {
-            setOffset(
-              new Float32Array([topLeftCoordinates.x, topLeftCoordinates.y]),
-            )
-          }
         }
+      } else {
+        throw Error('Error parsing RLE file')
       }
-
       // Set origin if available
     }
   }
-  throw Error('Error parsing RLE file')
 }

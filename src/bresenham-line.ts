@@ -1,5 +1,3 @@
-import { GOL } from './game-of-life'
-
 // Taken from https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 export function bresenhamLine(
   x0: number,
@@ -7,7 +5,7 @@ export function bresenhamLine(
   x1: number,
   y1: number,
   newValue: boolean,
-  gameOfLife: GOL,
+  setCell: (x: number, y: number, newValue: boolean) => void,
 ): void {
   const deltaX = Math.abs(x1 - x0)
   const stepX = x0 < x1 ? 1 : -1
@@ -16,7 +14,7 @@ export function bresenhamLine(
 
   let error = deltaX + deltaY
   while (true) {
-    gameOfLife.setCell(x0, y0, newValue)
+    setCell(x0, y0, newValue)
     if (x0 === x1 && y0 === y1) {
       break
     }

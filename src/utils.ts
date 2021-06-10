@@ -1,3 +1,9 @@
+export enum GridShowState {
+  Off,
+  On,
+  Auto,
+}
+
 export interface Point {
   x: number
   y: number

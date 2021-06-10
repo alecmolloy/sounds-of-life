@@ -1,6 +1,5 @@
 import * as Recoil from 'recoil'
-import { GridShowState } from './game-of-life'
-import { CanvasMode, Selection2D } from './utils'
+import { CanvasMode, getRenderSize, GridShowState, Selection2D } from './utils'
 
 export const cellSizeState = Recoil.atom({
   key: 'cellSize',
@@ -29,7 +28,7 @@ export const countState = Recoil.atom({
 
 export const liveState = Recoil.atom({
   key: 'live',
-  default: false,
+  default: true,
 })
 
 export const speedState = Recoil.atom({
@@ -44,5 +43,15 @@ export const showControlsState = Recoil.atom({
 
 export const showGridState = Recoil.atom({
   key: 'showGrid',
-  default: GridShowState.auto,
+  default: GridShowState.Auto,
+})
+
+export const boardSizeState = Recoil.atom({
+  key: 'boardSize',
+  default: new Float32Array([2 ** 12, 2 ** 12]),
+})
+
+export const viewSizeState = Recoil.atom({
+  key: 'viewSize',
+  default: new Float32Array(getRenderSize()),
 })

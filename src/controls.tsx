@@ -1,6 +1,5 @@
 import * as React from 'react'
 import Recoil from 'recoil'
-import { GridShowState } from './game-of-life'
 import {
   cellSizeState,
   countState,
@@ -10,7 +9,7 @@ import {
   showGridState,
   speedState,
 } from './state'
-import { preventDefault } from './utils'
+import { GridShowState, preventDefault } from './utils'
 
 interface ControlsProps {
   runGeneration: () => void
@@ -112,9 +111,9 @@ export const Controls = ({ runGeneration }: ControlsProps) => {
               }}
               value={showGrid}
             >
-              <option value={GridShowState.auto}>auto</option>
-              <option value={GridShowState.off}>off</option>
-              <option value={GridShowState.on}>on</option>
+              <option value={GridShowState.Auto}>auto</option>
+              <option value={GridShowState.Off}>off</option>
+              <option value={GridShowState.On}>on</option>
             </select>
           </div>
         </>
