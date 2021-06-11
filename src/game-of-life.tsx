@@ -203,35 +203,45 @@ export const GameOfLife: React.FunctionComponent = () => {
     [buffers, framebuffers, glR, programs, boardSize, textures],
   )
 
-  const getState = React.useCallback((): Uint8Array => {
-    if (
-      glR.current == null ||
-      textures.current == null ||
-      framebuffers.current == null
-    ) {
-      return new Uint8Array()
-    }
-    const gl = glR.current
+  const getBoardSection = React.useCallback(
+    (x: number, y: number, width: number, height: number): Uint8Array => {
+      if (
+        glR.current == null ||
+        textures.current == null ||
+        framebuffers.current == null
+      ) {
+        return new Uint8Array()
+      }
+      const gl = glR.current
 
-    const w = boardSize[0]
-    const h = boardSize[1]
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers.current.step)
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      textures.current.front,
-      0,
-    )
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers.current.step)
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        textures.current.front,
+        0,
+      )
+      const rgba = new Uint8Array(width * height * 4)
+      gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, rgba)
+      const state = new Uint8Array(width * height)
+      for (let i = 0; i < width * height; i++) {
+        state[i] = rgba[i * 4]
+      }
+      return state
+    },
+    [],
+  )
 
-    const rgba = new Uint8Array(w * h * 4)
-    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, rgba)
-    const state = new Uint8Array(w * h)
-    for (let i = 0; i < w * h; i++) {
-      state[i] = rgba[i * 4]
-    }
-    return state
-  }, [boardSize])
+  const getBoard = React.useCallback(
+    () => getBoardSection(0, 0, boardSize[0], boardSize[1]),
+    [boardSize, getBoardSection],
+  )
+
+  const getCell = React.useCallback(
+    (x: number, y: number) => getBoardSection(x, y, 1, 1)[0] === 255,
+    [getBoardSection],
+  )
 
   // TODO: explore generating this in a lazy way that could be then prioritized if actually needed?
   const emptyBoard = React.useMemo(
@@ -410,44 +420,6 @@ export const GameOfLife: React.FunctionComponent = () => {
     [boardSize],
   )
 
-  /**
-   * Get the state at a specific cell.
-   */
-  const getCell = React.useCallback(
-    (x: number, y: number): boolean => {
-      if (
-        glR.current == null ||
-        textures.current == null ||
-        framebuffers.current == null
-      ) {
-        return false
-      }
-      const gl = glR.current
-
-      const rgba = new Uint8Array(4)
-      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers.current.step)
-      gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,
-        gl.COLOR_ATTACHMENT0,
-        gl.TEXTURE_2D,
-        textures.current.front,
-        0,
-      )
-      gl.readPixels(
-        wrap(x, boardSize[0]),
-        wrap(y, boardSize[1]),
-        1,
-        1,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        rgba,
-      )
-
-      return rgba[0] === 255
-    },
-    [boardSize],
-  )
-
   const step = React.useCallback(() => {
     render()
     frameID.current = window.requestAnimationFrame(step)
@@ -517,7 +489,8 @@ export const GameOfLife: React.FunctionComponent = () => {
               setBoardState={setBoardState}
               getCell={getCell}
               setCell={setCell}
-              getState={getState}
+              getBoard={getBoard}
+              getBoardSection={getBoardSection}
               setEmpty={setEmpty}
             >
               <canvas

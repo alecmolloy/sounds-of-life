@@ -28,7 +28,13 @@ interface KeyboardShortcutsProps {
   setBoardState: (state: Uint8Array) => void
   getCell: (x: number, y: number) => boolean
   setCell: (x: number, y: number, newValue: boolean) => void
-  getState: () => Uint8Array
+  getBoard: () => Uint8Array
+  getBoardSection: (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => Uint8Array
   setEmpty: () => void
 }
 
@@ -38,7 +44,8 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
     setBoardState,
     getCell,
     setCell,
-    getState,
+    getBoard,
+    getBoardSection,
     setEmpty,
     children,
   }) => {
@@ -341,8 +348,17 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
     }, [onPaste])
 
     const onCopy = React.useCallback(() => {
-      navigator.clipboard.writeText(getState().toString())
-    }, [getState])
+      navigator.clipboard.writeText(
+        selection != null
+          ? getBoardSection(
+              selection.left,
+              selection.top,
+              selection.width(),
+              selection.height(),
+            ).toString()
+          : getBoard().toString(),
+      )
+    }, [getBoard, getBoardSection, selection])
     React.useEffect(() => {
       window.addEventListener('copy', onCopy)
       return () => window.removeEventListener('copy', onCopy)
