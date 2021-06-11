@@ -7,9 +7,9 @@ import {
   offsetState,
   showControlsState,
   showGridState,
-  speedState,
+  fpsState,
 } from './state'
-import { GridShowState, preventDefault } from './utils'
+import { GridShowState, maxFps, preventDefault } from './utils'
 
 interface ControlsProps {
   runGeneration: () => void
@@ -18,7 +18,7 @@ export const Controls = ({ runGeneration }: ControlsProps) => {
   const [showControls, setShowControls] =
     Recoil.useRecoilState(showControlsState)
   const [live, setLive] = Recoil.useRecoilState(liveState)
-  const [speed, setSpeed] = Recoil.useRecoilState(speedState)
+  const [fps, setFps] = Recoil.useRecoilState(fpsState)
   const [showGrid, setShowGrid] = Recoil.useRecoilState(showGridState)
 
   const offset = Recoil.useRecoilValue(offsetState)
@@ -33,14 +33,14 @@ export const Controls = ({ runGeneration }: ControlsProps) => {
     setLive((v) => !v)
   }, [setLive])
 
-  const onSpeedChange = React.useCallback(
+  const onFpsChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = Number(e.target.value)
       if (!isNaN(newValue)) {
-        setSpeed(newValue)
+        setFps(Math.min(maxFps, newValue))
       }
     },
-    [setSpeed],
+    [setFps],
   )
 
   return (
@@ -85,12 +85,12 @@ export const Controls = ({ runGeneration }: ControlsProps) => {
             <button style={{ marginRight: '1em' }} onClick={onRunClick}>
               {live ? 'Pause' : 'Run'}
             </button>
-            Speed (ms):
+            FPS:
             <input
               style={{ marginLeft: '1em', width: '5em' }}
               type='number'
-              value={speed}
-              onChange={onSpeedChange}
+              value={fps}
+              onChange={onFpsChange}
             />
           </div>
           <div style={{ marginTop: '1em' }}>

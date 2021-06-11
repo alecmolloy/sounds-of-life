@@ -88,3 +88,5 @@ export function modeIsSelecting(
 ): mode is 'selection-selecting' | 'selection-default' {
   return mode === 'selection-selecting' || mode === 'selection-default'
 }
+
+export const maxFps = 120

@@ -31,9 +31,9 @@ export const liveState = Recoil.atom({
   default: true,
 })
 
-export const speedState = Recoil.atom({
-  key: 'speed',
-  default: 200,
+export const fpsState = Recoil.atom({
+  key: 'fps',
+  default: 2,
 })
 
 export const showControlsState = Recoil.atom({

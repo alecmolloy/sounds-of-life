@@ -3,33 +3,24 @@ import React from 'react'
 import Dropzone from 'react-dropzone'
 import { Helmet } from 'react-helmet'
 import Recoil from 'recoil'
-import { bresenhamLine } from './bresenham-line'
+import { CanvasInteractions } from './canvas-interactions'
 import { Controls } from './controls'
 import gol from './glsl/gol.frag'
 import grid from './glsl/grid.frag'
 import quad from './glsl/quad.vert'
-import { KeyboardShortcuts } from './keyboard-shortcuts'
 import { parseRLEAndUpdateBoard } from './rle-handling'
 import {
   boardSizeState,
   cellSizeState,
+  fpsState,
   liveState,
   modeState,
   offsetState,
   selectionState,
   showGridState,
-  speedState,
   viewSizeState,
 } from './state'
-import {
-  CanvasMode,
-  getRenderSize,
-  modeIsDrawing,
-  modeIsSelecting,
-  Point,
-  roundToHaypixel,
-  selection2D,
-} from './utils'
+import { getRenderSize, modeIsSelecting } from './utils'
 import { createSimpleProgram, QUAD2 } from './webgl-utils'
 
 interface GOLPrograms {
@@ -55,44 +46,6 @@ function wrap(number: number, max: number): number {
   return ((number % max) + max) % max
 }
 
-function calculateOffsetForZoom(
-  mouseX: number,
-  mouseY: number,
-  oldOffset: Float32Array,
-  oldCellSize: number,
-  newCellSize: number,
-): Float32Array {
-  const x = mouseX / oldCellSize
-  const y = mouseY / oldCellSize
-  const scaleFactor = newCellSize / oldCellSize
-  return new Float32Array([
-    x - x / scaleFactor + oldOffset[0],
-    y - y / scaleFactor + oldOffset[1],
-  ])
-}
-
-function getAndSetNewMode(
-  mode: CanvasMode,
-  setMode: React.Dispatch<React.SetStateAction<CanvasMode>>,
-  e: React.MouseEvent,
-): CanvasMode {
-  let newMode: CanvasMode = mode
-  if (e.metaKey || e.ctrlKey) {
-    switch (mode) {
-      case 'selection-selecting': {
-        newMode = 'drawing-insert-cell'
-        break
-      }
-      case 'selection-default': {
-        newMode = 'drawing-default'
-        break
-      }
-    }
-  }
-  setMode(newMode)
-  return newMode
-}
-
 /**
  * Game of Life simulation and display.
  * @param {HTMLCanvasElement} canvas Render target
@@ -102,6 +55,7 @@ export const GameOfLife: React.FunctionComponent = () => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
   const frameID = React.useRef<number | null>(null)
+  const lastGenerationTimestamp = React.useRef<number>(Infinity)
 
   const glR = React.useRef<WebGLRenderingContext | null>(null)
   const programs = React.useRef<GOLPrograms | null>(null)
@@ -109,18 +63,17 @@ export const GameOfLife: React.FunctionComponent = () => {
   const textures = React.useRef<GOLTextures | null>(null)
   const buffers = React.useRef<GOLBuffers | null>(null)
 
-  const scrollTimeoutID = React.useRef<number | null>(null)
-  const zoomTimeoutID = React.useRef<number | null>(null)
-
-  const [cellSize, setCellSize] = Recoil.useRecoilState(cellSizeState)
   const [offset, setOffset] = Recoil.useRecoilState(offsetState)
-  const [mode, setMode] = Recoil.useRecoilState(modeState)
-  const [selection, setSelection] = Recoil.useRecoilState(selectionState)
   const [viewSize, setViewSize] = Recoil.useRecoilState(viewSizeState)
-  const stateSize = Recoil.useRecoilValue(boardSizeState)
+
+  const boardSize = Recoil.useRecoilValue(boardSizeState)
   const showGrid = Recoil.useRecoilValue(showGridState)
-  const speed = Recoil.useRecoilValue(speedState)
+  const fps = Recoil.useRecoilValue(fpsState)
+  const frameLength = 1000 / fps
   const live = Recoil.useRecoilValue(liveState)
+  const selection = Recoil.useRecoilValue(selectionState)
+  const cellSize = Recoil.useRecoilValue(cellSizeState)
+  const mode = Recoil.useRecoilValue(modeState)
 
   const [canvasDrawingSize, setCanvasDrawingSize] = React.useState(
     getRenderSize(),
@@ -130,11 +83,9 @@ export const GameOfLife: React.FunctionComponent = () => {
     window.innerHeight,
   ])
 
-  const [lastDraggedFramePosition, setLastDraggedFramePosition] =
-    React.useState<Point | null>(null)
-  const [mouseX, setMouseX] = React.useState<number | null>(null)
-  const [mouseY, setMouseY] = React.useState<number | null>(null)
-
+  /***
+   * Set up WebGL Context once when everything loads
+   */
   React.useEffect(() => {
     glR.current = canvasRef.current?.getContext('webgl') ?? null
     if (glR.current == null) {
@@ -172,8 +123,8 @@ export const GameOfLife: React.FunctionComponent = () => {
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      stateSize[0],
-      stateSize[1],
+      boardSize[0],
+      boardSize[1],
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
@@ -191,8 +142,8 @@ export const GameOfLife: React.FunctionComponent = () => {
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      stateSize[0],
-      stateSize[1],
+      boardSize[0],
+      boardSize[1],
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
@@ -236,28 +187,20 @@ export const GameOfLife: React.FunctionComponent = () => {
       }
       const gl = glR.current
 
-      const rgba = new Uint8Array(stateSize[0] * stateSize[1] * 4)
-      state.forEach((newValue, i) => {
-        const ii = i * 4
-        rgba[ii] = newValue
-        rgba[ii + 1] = newValue
-        rgba[ii + 2] = newValue
-        rgba[ii + 3] = 255
-      })
       gl.bindTexture(gl.TEXTURE_2D, textures.current.front)
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
         gl.RGBA,
-        stateSize[0],
-        stateSize[1],
+        boardSize[0],
+        boardSize[1],
         0,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        rgba,
+        state,
       )
     },
-    [buffers, framebuffers, glR, programs, stateSize, textures],
+    [buffers, framebuffers, glR, programs, boardSize, textures],
   )
 
   const getState = React.useCallback((): Uint8Array => {
@@ -270,8 +213,8 @@ export const GameOfLife: React.FunctionComponent = () => {
     }
     const gl = glR.current
 
-    const w = stateSize[0]
-    const h = stateSize[1]
+    const w = boardSize[0]
+    const h = boardSize[1]
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers.current.step)
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
@@ -288,14 +231,20 @@ export const GameOfLife: React.FunctionComponent = () => {
       state[i] = rgba[i * 4]
     }
     return state
-  }, [stateSize])
+  }, [boardSize])
+
+  // TODO: explore generating this in a lazy way that could be then prioritized if actually needed?
+  const emptyBoard = React.useMemo(
+    () => new Uint8Array(boardSize[0] * boardSize[1] * 4),
+    [boardSize],
+  )
 
   /**
    * Clear the simulation state to empty.
    */
   const setEmpty = React.useCallback(() => {
-    setBoardState(new Uint8Array(stateSize[0] * stateSize[1]))
-  }, [setBoardState, stateSize])
+    setBoardState(emptyBoard)
+  }, [emptyBoard, setBoardState])
 
   /**
    * Swap the texture buffers.
@@ -337,7 +286,7 @@ export const GameOfLife: React.FunctionComponent = () => {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, textures.current.front)
 
-    gl.viewport(0, 0, stateSize[0], stateSize[1])
+    gl.viewport(0, 0, boardSize[0], boardSize[1])
 
     gl.useProgram(programs.current.gol)
 
@@ -354,7 +303,7 @@ export const GameOfLife: React.FunctionComponent = () => {
     )
     gl.uniform2fv(
       gl.getUniformLocation(programs.current.gol, 'stateSize'),
-      stateSize,
+      boardSize,
     )
     gl.uniform1f(
       gl.getUniformLocation(programs.current.gol, 'cellSize'),
@@ -363,7 +312,7 @@ export const GameOfLife: React.FunctionComponent = () => {
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     swap()
-  }, [cellSize, stateSize, swap, viewSize])
+  }, [cellSize, boardSize, swap, viewSize])
 
   /**
    * Render the Game of Life state stored on the GPU.
@@ -402,7 +351,7 @@ export const GameOfLife: React.FunctionComponent = () => {
     )
     gl.uniform2fv(
       gl.getUniformLocation(programs.current.grid, 'stateSize'),
-      stateSize,
+      boardSize,
     )
     gl.uniform1f(
       gl.getUniformLocation(programs.current.grid, 'cellSize'),
@@ -426,7 +375,7 @@ export const GameOfLife: React.FunctionComponent = () => {
     )
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-  }, [cellSize, offset, showGrid, stateSize, viewSize])
+  }, [cellSize, offset, showGrid, boardSize, viewSize])
 
   /**
    * Set the state at a specific cell.
@@ -449,8 +398,8 @@ export const GameOfLife: React.FunctionComponent = () => {
       gl.texSubImage2D(
         gl.TEXTURE_2D,
         0,
-        wrap(x, stateSize[0]),
-        wrap(y, stateSize[1]),
+        wrap(x, boardSize[0]),
+        wrap(y, boardSize[1]),
         1,
         1,
         gl.RGBA,
@@ -458,7 +407,7 @@ export const GameOfLife: React.FunctionComponent = () => {
         new Uint8Array([v, v, v, 255]),
       )
     },
-    [stateSize],
+    [boardSize],
   )
 
   /**
@@ -469,9 +418,7 @@ export const GameOfLife: React.FunctionComponent = () => {
       if (
         glR.current == null ||
         textures.current == null ||
-        buffers.current == null ||
-        framebuffers.current == null ||
-        programs.current == null
+        framebuffers.current == null
       ) {
         return false
       }
@@ -487,8 +434,8 @@ export const GameOfLife: React.FunctionComponent = () => {
         0,
       )
       gl.readPixels(
-        wrap(x, stateSize[0]),
-        wrap(y, stateSize[1]),
+        wrap(x, boardSize[0]),
+        wrap(y, boardSize[1]),
         1,
         1,
         gl.RGBA,
@@ -498,13 +445,28 @@ export const GameOfLife: React.FunctionComponent = () => {
 
       return rgba[0] === 255
     },
-    [stateSize],
+    [boardSize],
   )
 
-  const animate = React.useCallback(() => {
+  const step = React.useCallback(() => {
     render()
-    window.requestAnimationFrame(animate)
+    frameID.current = window.requestAnimationFrame(step)
   }, [render])
+
+  useInterval(() => {
+    if (live) {
+      generate()
+    }
+  }, frameLength)
+
+  React.useEffect(() => {
+    frameID.current = window.requestAnimationFrame(step)
+    return () => {
+      if (frameID.current != null) {
+        window.cancelAnimationFrame(frameID.current)
+      }
+    }
+  }, [step])
 
   const onResize = React.useCallback(() => {
     const [newRenderWidth, newRenderHeight] = getRenderSize()
@@ -513,225 +475,14 @@ export const GameOfLife: React.FunctionComponent = () => {
     setViewSize(new Float32Array([newRenderWidth, newRenderHeight]))
   }, [setViewSize])
 
-  const onMouseDown = React.useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const x = Math.floor(e.clientX / cellSize + offset[0])
-      const y = Math.floor(e.clientY / cellSize + offset[1])
-
-      const currentValue = getCell(x, y)
-      const newMode = getAndSetNewMode(mode, setMode, e)
-      switch (newMode) {
-        case 'drawing-default': {
-          const newValue = !currentValue
-          setMode(newValue ? 'drawing-insert-cell' : 'drawing-erase')
-          break
-        }
-        case 'selection-default': {
-          setSelection(selection2D(x, y, x + 1, y + 1, x, y))
-          setMode('selection-selecting')
-          break
-        }
-        default: {
-          console.error(newMode)
-        }
-      }
-      setLastDraggedFramePosition({ x, y })
-    },
-    [cellSize, offset, getCell, mode, setMode, setSelection],
-  )
-
-  const onMouseMove = React.useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const x = Math.floor(e.clientX / cellSize + offset[0])
-      const y = Math.floor(e.clientY / cellSize + offset[1])
-
-      // TODO: support haypixels
-      setMouseX(x)
-      setMouseY(y)
-      const newMode = getAndSetNewMode(mode, setMode, e)
-      switch (newMode) {
-        case 'drawing-default':
-        case 'selection-default': {
-          break
-        }
-        case 'drawing-erase':
-        case 'drawing-insert-cell': {
-          const newValue = newMode === 'drawing-insert-cell'
-          if (lastDraggedFramePosition != null) {
-            bresenhamLine(
-              lastDraggedFramePosition.x,
-              lastDraggedFramePosition.y,
-              x,
-              y,
-              newValue,
-              setCell,
-            )
-          } else {
-            setCell(x, y, newValue)
-          }
-          setLastDraggedFramePosition({ x, y })
-          break
-        }
-        case 'selection-selecting': {
-          if (selection !== null) {
-            const { newLeft, newRight } = (() => {
-              if (x > selection.originX) {
-                return { newLeft: selection.originX, newRight: x + 1 }
-              } else {
-                return { newLeft: x, newRight: selection.originX + 1 }
-              }
-            })()
-            const { newTop, newBottom } = (() => {
-              if (y > selection.originY) {
-                return { newTop: selection.originY, newBottom: y + 1 }
-              } else {
-                return { newTop: y, newBottom: selection.originY + 1 }
-              }
-            })()
-            setSelection(
-              selection2D(
-                newLeft,
-                newTop,
-                newRight,
-                newBottom,
-                selection.originX,
-                selection.originY,
-              ),
-            )
-          } else {
-            throw new Error('Selection not set')
-          }
-          break
-        }
-        default: {
-          const _exhaustiveCheck: never = newMode
-          throw new Error(`${_exhaustiveCheck} not accounted for`)
-        }
-      }
-    },
-    [
-      cellSize,
-      offset,
-      mode,
-      setMode,
-      lastDraggedFramePosition,
-      setCell,
-      selection,
-      setSelection,
-    ],
-  )
-
-  const onMouseUp = React.useCallback(() => {
-    if (modeIsDrawing(mode)) {
-      setMode('drawing-default')
-    } else if (modeIsSelecting(mode)) {
-      setMode('selection-default')
-    }
-  }, [mode, setMode])
-
-  const onWheel = React.useCallback(
-    (e: WheelEvent) => {
-      e.preventDefault()
-      if (e.ctrlKey) {
-        const newCellSize = Math.min(
-          20,
-          Math.max(0.5, cellSize + (cellSize * -e.deltaY) / 100),
-        )
-        setOffset((v) =>
-          calculateOffsetForZoom(e.x, e.y, v, cellSize, newCellSize),
-        )
-        setCellSize(newCellSize)
-
-        if (zoomTimeoutID.current != null) {
-          clearTimeout(zoomTimeoutID.current)
-        }
-        zoomTimeoutID.current = window.setTimeout(() => {
-          const targetNewCellSize = roundToHaypixel(
-            newCellSize,
-            newCellSize > 1,
-          )
-          setCellSize(targetNewCellSize)
-          setOffset((v) =>
-            calculateOffsetForZoom(e.x, e.y, v, newCellSize, targetNewCellSize),
-          )
-        }, 500)
-      } else {
-        setOffset(
-          (v) =>
-            new Float32Array([
-              v[0] + e.deltaX / cellSize,
-              v[1] + e.deltaY / cellSize,
-            ]),
-        )
-
-        if (scrollTimeoutID.current != null) {
-          clearTimeout(scrollTimeoutID.current)
-        }
-        scrollTimeoutID.current = window.setTimeout(() => {
-          setOffset(
-            (v) =>
-              new Float32Array([
-                roundToHaypixel(v[0] * cellSize, cellSize < 1) / cellSize,
-                roundToHaypixel(v[1] * cellSize, cellSize < 1) / cellSize,
-              ]),
-          )
-        }, 500)
-      }
-    },
-    [setCellSize, setOffset, cellSize],
-  )
-
   React.useEffect(() => {
-    frameID.current = window.requestAnimationFrame(animate)
-    return () => {
-      if (frameID.current != null) {
-        window.cancelAnimationFrame(frameID.current)
-      }
-    }
-  }, [animate])
-
-  React.useEffect(() => {
+    onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [onResize])
 
-  React.useEffect(() => {
-    document.body.addEventListener('wheel', onWheel, {
-      passive: false,
-    })
-
-    return () => {
-      document.body.removeEventListener('wheel', onWheel)
-    }
-  }, [onWheel])
-
   const selectionWidth = selection?.width() ?? 0
   const selectionHeight = selection?.height() ?? 0
-
-  useInterval(() => {
-    if (live) {
-      generate()
-    }
-  }, speed)
-
-  const onPaste = React.useCallback(
-    (e: ClipboardEvent) => {
-      const text = e.clipboardData?.getData('text')
-      if (text != null) {
-        parseRLEAndUpdateBoard(text, setBoardState, setOffset, stateSize)
-      }
-    },
-    [setBoardState, setOffset, stateSize],
-  )
-
-  React.useEffect(() => {
-    window.addEventListener('paste', onPaste as any)
-    return () => window.removeEventListener('paste', onPaste as any)
-  })
-
-  React.useEffect(() => {
-    onResize()
-  }, [onResize])
 
   return (
     <>
@@ -754,67 +505,53 @@ export const GameOfLife: React.FunctionComponent = () => {
           const zeroth = acceptedFiles[0]
           if (zeroth instanceof window.File) {
             zeroth.text().then((text) => {
-              parseRLEAndUpdateBoard(text, setBoardState, setOffset, stateSize)
+              parseRLEAndUpdateBoard(text, setBoardState, setOffset, boardSize)
             })
           }
         }}
       >
         {({ getRootProps }) => (
           <div {...getRootProps()} style={{ outline: 'none' }}>
-            <KeyboardShortcuts live={live} runGeneration={generate}>
-              <>
-                <canvas
-                  ref={canvasRef}
-                  onMouseDown={onMouseDown}
-                  onMouseMove={onMouseMove}
-                  onMouseUp={onMouseUp}
+            <CanvasInteractions
+              runGeneration={generate}
+              setBoardState={setBoardState}
+              getCell={getCell}
+              setCell={setCell}
+              getState={getState}
+              setEmpty={setEmpty}
+            >
+              <canvas
+                ref={canvasRef}
+                style={{
+                  cursor: modeIsSelecting(mode)
+                    ? 'cell'
+                    : `-webkit-image-set(
+                          url(/icons/pencil@2x.png) 2x,
+                          url(/icons/pencil@1x.png) 1x) 3 18, default`,
+                  width: canvasStyleSize[0],
+                  height: canvasStyleSize[1],
+                }}
+                width={canvasDrawingSize[0]}
+                height={canvasDrawingSize[1]}
+              />
+              {selection != null &&
+              selectionWidth !== 0 &&
+              selectionHeight !== 0 ? (
+                <div
                   style={{
-                    cursor: modeIsSelecting(mode)
-                      ? 'cell'
-                      : `-webkit-image-set(
-            url(/icons/pencil@2x.png) 2x,
-            url(/icons/pencil@1x.png) 1x) 3 18, default`,
-                    width: canvasStyleSize[0],
-                    height: canvasStyleSize[1],
+                    width: selectionWidth * cellSize,
+                    height: selectionHeight * cellSize,
+                    left: (-offset[0] + selection.left) * cellSize,
+                    top: (-offset[1] + selection.top) * cellSize,
+                    pointerEvents: 'none',
+                    backgroundColor: '#0f02',
+                    boxShadow: '0 0 0 0.5px #0f06 inset',
+                    position: 'absolute',
+                    boxSizing: 'border-box',
                   }}
-                  width={canvasDrawingSize[0]}
-                  height={canvasDrawingSize[1]}
                 />
-                {mouseX != null && mouseY != null ? (
-                  <div
-                    style={{
-                      userSelect: 'none',
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      color: 'white',
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                      padding: 2,
-                    }}
-                  >
-                    ({mouseX}, {mouseY})
-                  </div>
-                ) : null}
-                {selection != null &&
-                selectionWidth !== 0 &&
-                selectionHeight !== 0 ? (
-                  <div
-                    style={{
-                      width: selectionWidth * cellSize,
-                      height: selectionHeight * cellSize,
-                      left: (-offset[0] + selection.left) * cellSize,
-                      top: (-offset[1] + selection.top) * cellSize,
-                      pointerEvents: 'none',
-                      backgroundColor: '#0f02',
-                      boxShadow: '0 0 0 0.5px #0f06 inset',
-                      position: 'absolute',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                ) : null}
-              </>
-            </KeyboardShortcuts>
+              ) : null}
+            </CanvasInteractions>
             <Controls runGeneration={generate} />
           </div>
         )}

@@ -44,7 +44,7 @@ export const parseRLEAndUpdateBoard = (
   rleText: string,
   setBoardState: (state: Uint8Array) => void,
   setOffset: Recoil.SetterOrUpdater<Float32Array>,
-  stateSize: Float32Array,
+  boardSize: Float32Array,
 ) => {
   const parsed = parser.parse(rleText) as Array<Line>
   if (Array.isArray(parsed)) {
@@ -53,22 +53,27 @@ export const parseRLEAndUpdateBoard = (
       (item): item is Cells => item.type === 'lines',
     )
     if (parsedGOLCells != null) {
-      const width = stateSize[0]
-      const height = stateSize[1]
-      const workingStateArray = new Uint8Array(width * height).fill(0)
+      const workingStateArray = new Uint8Array(
+        boardSize[0] * boardSize[1] * 4,
+      ).fill(0)
       const cells = parsedGOLCells.items
 
       let xIndex = 0
       let yIndex = 0
+      const boardWidth = boardSize[0] * 4
       cells.forEach((cell) => {
         const count = cell[0]
         const value = cell[1]
         if (value === 'o') {
           for (let i = 0; i < count; i++) {
-            workingStateArray[xIndex + width * yIndex] = 255
+            workingStateArray[xIndex * 4 + boardWidth * yIndex + 0] = 255
+            workingStateArray[xIndex * 4 + boardWidth * yIndex + 1] = 255
+            workingStateArray[xIndex * 4 + boardWidth * yIndex + 2] = 255
+            workingStateArray[xIndex * 4 + boardWidth * yIndex + 3] = 255
             xIndex++
           }
         } else if (value === 'b') {
+          workingStateArray[xIndex * 4 + boardWidth * yIndex + 3] = 255
           xIndex += count
         } else {
           xIndex = 0
