@@ -1,7 +1,8 @@
 import React from 'react'
 import Recoil from 'recoil'
 import { bresenhamLine } from './bresenham-line'
-import { parseRLEAndUpdateBoard } from './rle-handling'
+import { parseRLEAndUpdateBoard } from './rle-parser'
+import { rlePrinter } from './rle-printer'
 import {
   boardSizeState,
   cellSizeState,
@@ -348,17 +349,16 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
     }, [onPaste])
 
     const onCopy = React.useCallback(() => {
-      navigator.clipboard.writeText(
-        selection != null
-          ? getBoardSection(
-              selection.left,
-              selection.top,
-              selection.width(),
-              selection.height(),
-            ).toString()
-          : getBoard().toString(),
-      )
-    }, [getBoard, getBoardSection, selection])
+      if (selection != null) {
+        const x = selection.left
+        const y = selection.top
+        const width = selection.width()
+        const height = selection.height()
+        navigator.clipboard.writeText(
+          rlePrinter(getBoardSection(x, y, width, height), width, height, 0, 0),
+        )
+      }
+    }, [getBoardSection, selection])
     React.useEffect(() => {
       window.addEventListener('copy', onCopy)
       return () => window.removeEventListener('copy', onCopy)

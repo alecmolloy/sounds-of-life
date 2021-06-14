@@ -8,7 +8,7 @@ import { Controls } from './controls'
 import gol from './glsl/gol.frag'
 import grid from './glsl/grid.frag'
 import quad from './glsl/quad.vert'
-import { parseRLEAndUpdateBoard } from './rle-handling'
+import { parseRLEAndUpdateBoard } from './rle-parser'
 import {
   boardSizeState,
   cellSizeState,
