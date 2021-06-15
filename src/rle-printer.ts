@@ -1,5 +1,5 @@
 // info on how RLE game of life files work: https://www.conwaylife.com/wiki/Run_Length_Encoded
-export const rlePrinter = (
+export const printRLE = (
   board: Uint8Array,
   width: number,
   height: number,

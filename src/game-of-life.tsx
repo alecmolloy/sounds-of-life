@@ -491,7 +491,6 @@ export const GameOfLife: React.FunctionComponent = () => {
               setBoardState={setBoardState}
               getCell={getCell}
               setCell={setCell}
-              getBoard={getBoard}
               getBoardSection={getBoardSection}
               setEmpty={setEmpty}
             >
@@ -527,7 +526,7 @@ export const GameOfLife: React.FunctionComponent = () => {
                 />
               ) : null}
             </CanvasInteractions>
-            <Controls runGeneration={generate} />
+            <Controls runGeneration={generate} getBoard={getBoard} />
           </div>
         )}
       </Dropzone>

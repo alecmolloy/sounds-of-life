@@ -2,7 +2,7 @@ import React from 'react'
 import Recoil from 'recoil'
 import { bresenhamLine } from './bresenham-line'
 import { parseRLEAndUpdateBoard } from './rle-parser'
-import { rlePrinter } from './rle-printer'
+import { printRLE } from './rle-printer'
 import {
   boardSizeState,
   cellSizeState,
@@ -29,7 +29,6 @@ interface KeyboardShortcutsProps {
   setBoardState: (state: Uint8Array) => void
   getCell: (x: number, y: number) => boolean
   setCell: (x: number, y: number, newValue: boolean) => void
-  getBoard: () => Uint8Array
   getBoardSection: (
     x: number,
     y: number,
@@ -39,13 +38,15 @@ interface KeyboardShortcutsProps {
   setEmpty: () => void
 }
 
+const MaxZoom = 25
+const MinZoom = 0.5
+
 export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps> =
   ({
     runGeneration,
     setBoardState,
     getCell,
     setCell,
-    getBoard,
     getBoardSection,
     setEmpty,
     children,
@@ -104,7 +105,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         case 'Equal': {
           if (e.metaKey) {
             e.preventDefault()
-            setCellSize((v) => v * 1.1)
+            setCellSize((v) => Math.min(MaxZoom, v * 1.1))
           } else {
             setFps((fps) => Math.min(maxFps, Math.round(fps / 1.1)))
           }
@@ -113,7 +114,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         case 'Minus': {
           if (e.metaKey) {
             e.preventDefault()
-            setCellSize((v) => Math.max(1, v / 1.1))
+            setCellSize((v) => Math.max(MinZoom, v / 1.1))
           } else {
             setFps((fps) => Math.min(maxFps, Math.round(fps * 1.1)))
           }
@@ -266,8 +267,8 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         e.preventDefault()
         if (e.ctrlKey) {
           const newCellSize = Math.min(
-            20,
-            Math.max(0.5, cellSize + (cellSize * -e.deltaY) / 100),
+            MaxZoom,
+            Math.max(MinZoom, cellSize + (cellSize * -e.deltaY) / 100),
           )
           setOffset((v) =>
             calculateOffsetForZoom(e.x, e.y, v, cellSize, newCellSize),
@@ -355,7 +356,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         const width = selection.width()
         const height = selection.height()
         window.navigator.clipboard.writeText(
-          rlePrinter(getBoardSection(x, y, width, height), width, height, 0, 0),
+          printRLE(getBoardSection(x, y, width, height), width, height, 0, 0),
         )
       }
     }, [getBoardSection, selection])
