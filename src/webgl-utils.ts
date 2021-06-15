@@ -4,13 +4,13 @@ export function createProgram(
   fragmentShader: WebGLShader,
 ): WebGLProgram {
   const program = gl.createProgram()
-  if (!program) {
+  if (program == null) {
     throw new Error(`Program couldn't be created`)
   }
   gl.attachShader(program, vertexShader)
   gl.attachShader(program, fragmentShader)
   gl.linkProgram(program)
-  const success = gl.getProgramParameter(program, gl.LINK_STATUS)
+  const success: boolean = gl.getProgramParameter(program, gl.LINK_STATUS)
   if (success) {
     return program
   } else {
@@ -25,12 +25,16 @@ export function createShader(
   source: string,
 ): WebGLShader {
   const shader = gl.createShader(type)
-  if (!shader) {
+  if (shader == null) {
     throw new Error('Shader could not be loaded.')
   }
   gl.shaderSource(shader, source)
   gl.compileShader(shader)
-  if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+  const compileStatus: boolean = gl.getShaderParameter(
+    shader,
+    gl.COMPILE_STATUS,
+  )
+  if (compileStatus) {
     return shader
   } else {
     throw new Error(

@@ -11,6 +11,6 @@ import { GameOfLife } from './game-of-life'
 // TODO: fix pinch to zoom on safari: https://dev.to/danburzo/pinch-me-i-m-zooming-gestures-in-the-dom-a0e
 // TODO: figure out why chrome goes @1x suddenly while resizing or after swapping windows
 
-export const SoundsOfLife = () => {
+export const SoundsOfLife: React.FunctionComponent = () => {
   return <GameOfLife />
 }

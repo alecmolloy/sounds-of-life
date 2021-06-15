@@ -14,7 +14,9 @@ import { GridShowState, maxFps, preventDefault } from './utils'
 interface ControlsProps {
   runGeneration: () => void
 }
-export const Controls = ({ runGeneration }: ControlsProps) => {
+export const Controls: React.FunctionComponent<ControlsProps> = ({
+  runGeneration,
+}) => {
   const [showControls, setShowControls] =
     Recoil.useRecoilState(showControlsState)
   const [live, setLive] = Recoil.useRecoilState(liveState)

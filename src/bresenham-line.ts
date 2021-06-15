@@ -13,19 +13,19 @@ export function bresenhamLine(
   const stepY = y0 < y1 ? 1 : -1
 
   let error = deltaX + deltaY
-  while (true) {
-    setCell(x0, y0, newValue)
-    if (x0 === x1 && y0 === y1) {
-      break
-    }
+  setCell(x0, y0, newValue)
+  let workingX = x0
+  let workingY = y0
+  while (workingX !== x1 || workingY !== y1) {
     const errorX2 = error * 2
     if (errorX2 >= deltaY) {
       error += deltaY
-      x0 += stepX
+      workingX += stepX
     }
     if (errorX2 <= deltaX) {
       error += deltaX
-      y0 += stepY
+      workingY += stepY
     }
+    setCell(workingX, workingY, newValue)
   }
 }

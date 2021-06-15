@@ -5,9 +5,7 @@ export const rlePrinter = (
   height: number,
   offsetX: number = 0,
   offsetY: number = 0,
-) => {
-  console.log(board, board.toString())
-  debugger
+): string => {
   const header = `x = ${width}, y = ${height}`
   const timestamp = `#O ${new Date(Date.now()).toString()}`
   const offset = `#R ${offsetX} ${offsetY}`
@@ -54,7 +52,6 @@ export const rlePrinter = (
     runningValue = null
   }
   workingLinesString += '!'
-  console.log(workingLinesString)
   return [header, timestamp, offset, workingLinesString].join('\n')
 }
 

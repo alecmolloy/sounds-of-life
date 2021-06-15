@@ -55,7 +55,6 @@ export const GameOfLife: React.FunctionComponent = () => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
   const frameID = React.useRef<number | null>(null)
-  const lastGenerationTimestamp = React.useRef<number>(Infinity)
 
   const glR = React.useRef<WebGLRenderingContext | null>(null)
   const programs = React.useRef<GOLPrograms | null>(null)
@@ -456,6 +455,18 @@ export const GameOfLife: React.FunctionComponent = () => {
   const selectionWidth = selection?.width() ?? 0
   const selectionHeight = selection?.height() ?? 0
 
+  const onDrop = React.useCallback(
+    (acceptedFiles) => {
+      const zeroth = acceptedFiles[0]
+      if (zeroth instanceof window.File) {
+        zeroth.text().then((text) => {
+          parseRLEAndUpdateBoard(text, setBoardState, setOffset, boardSize)
+        })
+      }
+    },
+    [boardSize, setBoardState, setOffset],
+  )
+
   return (
     <>
       <Helmet>
@@ -472,16 +483,7 @@ export const GameOfLife: React.FunctionComponent = () => {
           `}
         </style>
       </Helmet>
-      <Dropzone
-        onDrop={(acceptedFiles) => {
-          const zeroth = acceptedFiles[0]
-          if (zeroth instanceof window.File) {
-            zeroth.text().then((text) => {
-              parseRLEAndUpdateBoard(text, setBoardState, setOffset, boardSize)
-            })
-          }
-        }}
-      >
+      <Dropzone onDrop={onDrop}>
         {({ getRootProps }) => (
           <div {...getRootProps()} style={{ outline: 'none' }}>
             <CanvasInteractions

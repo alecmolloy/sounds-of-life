@@ -9,7 +9,7 @@ export interface Point {
   y: number
 }
 
-export const preventDefault = (e: { preventDefault: () => void }) => {
+export const preventDefault = (e: { preventDefault: () => void }): void => {
   e.preventDefault()
 }
 

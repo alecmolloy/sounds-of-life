@@ -331,7 +331,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
 
     const onPaste = React.useCallback(
       () =>
-        navigator.clipboard
+        window.navigator.clipboard
           .readText()
           .then((clipboardText) =>
             parseRLEAndUpdateBoard(
@@ -354,7 +354,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         const y = selection.top
         const width = selection.width()
         const height = selection.height()
-        navigator.clipboard.writeText(
+        window.navigator.clipboard.writeText(
           rlePrinter(getBoardSection(x, y, width, height), width, height, 0, 0),
         )
       }

@@ -2,7 +2,6 @@
 // https://darednaxella.name/pages/writing-javascript-parser-for-rle-files/
 
 import Recoil from 'recoil'
-// @ts-ignore
 import * as parser from './scripts/rle-parser'
 
 interface Cells {
@@ -45,7 +44,7 @@ export const parseRLEAndUpdateBoard = (
   setBoardState: (state: Uint8Array) => void,
   setOffset: Recoil.SetterOrUpdater<Float32Array>,
   boardSize: Float32Array,
-) => {
+): void => {
   const parsed = parser.parse(rleText) as Array<Line>
   if (Array.isArray(parsed)) {
     // Create new board state
