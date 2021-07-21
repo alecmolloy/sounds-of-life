@@ -1,44 +1,52 @@
+import Input from '@material-ui/core/Input'
+import Slider, { Mark } from '@material-ui/core/Slider'
 import * as React from 'react'
 import Recoil from 'recoil'
+import { calculateOffsetForZoom, MaxZoom, MinZoom } from './canvas-interactions'
 import { printRLE } from './rle-printer'
 import {
+  boardSizeState,
   cellSizeState,
   countState,
-  liveState,
-  offsetState,
-  showControlsState,
-  showGridState,
   fpsState,
-  boardSizeState,
+  liveState,
+  modeState,
+  offsetState,
+  showGridState,
 } from './state'
-import { GridShowState, maxFps, preventDefault } from './utils'
+import { GridShowState, maxFps, modeIsDrawing, modeIsSelecting } from './utils'
 
 interface ControlsProps {
-  runGeneration: () => void
+  generate: () => void
   getBoard: () => Uint8Array
 }
 export const Controls: React.FunctionComponent<ControlsProps> = ({
   getBoard,
-  runGeneration,
+  generate,
 }) => {
-  const [showControls, setShowControls] =
-    Recoil.useRecoilState(showControlsState)
   const [live, setLive] = Recoil.useRecoilState(liveState)
   const [fps, setFps] = Recoil.useRecoilState(fpsState)
   const [showGrid, setShowGrid] = Recoil.useRecoilState(showGridState)
+  const [mode, setMode] = Recoil.useRecoilState(modeState)
+  const [count, setCount] = Recoil.useRecoilState(countState)
+  const [cellSize, setCellSize] = Recoil.useRecoilState(cellSizeState)
+
   const boardSize = Recoil.useRecoilValue(boardSizeState)
 
-  const offset = Recoil.useRecoilValue(offsetState)
-  const count = Recoil.useRecoilValue(countState)
-  const cellSize = Recoil.useRecoilValue(cellSizeState)
+  const setOffset = Recoil.useSetRecoilState(offsetState)
 
   const onGenerateClick = React.useCallback(() => {
-    runGeneration()
-  }, [runGeneration])
+    generate()
+  }, [generate])
 
   const onRunClick = React.useCallback(() => {
     setLive((v) => !v)
   }, [setLive])
+
+  const onStepBackwardsClick = React.useCallback(() => {
+    setLive(false)
+    setCount((v) => v - 1)
+  }, [setCount, setLive])
 
   const onFpsChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,103 +58,207 @@ export const Controls: React.FunctionComponent<ControlsProps> = ({
     [setFps],
   )
 
+  const onSaveClick = React.useCallback(() => {
+    const fileContent = printRLE(getBoard(), boardSize[0], boardSize[1])
+
+    const element = document.createElement('a')
+    const file = new Blob([fileContent], { type: 'text/plain' })
+    element.href = URL.createObjectURL(file)
+    element.download = `pattern.rle`
+    document.body.appendChild(element) // Required for this to work in FireFox
+    element.click()
+    document.body.removeChild(element)
+  }, [boardSize, getBoard])
+
+  const onShowGridChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>): void => {
+      setShowGrid(Number(e.target.value) as GridShowState)
+    },
+    [setShowGrid],
+  )
+
+  const onSelectionToolClick = React.useCallback(
+    () => setMode('selection-default'),
+    [setMode],
+  )
+  const onDrawingToolClick = React.useCallback(
+    () => setMode('drawing-default'),
+    [setMode],
+  )
+
+  const onCellSizeChange: (
+    event: React.ChangeEvent<any>,
+    value: number | Array<number>,
+  ) => void = React.useCallback(
+    (e, newCellSize) => {
+      if (!Array.isArray(newCellSize)) {
+        setOffset((v) =>
+          calculateOffsetForZoom(
+            window.innerWidth / 2,
+            window.innerHeight / 2,
+            v,
+            cellSize,
+            newCellSize,
+          ),
+        )
+        setCellSize(newCellSize)
+      }
+    },
+    [cellSize, setCellSize, setOffset],
+  )
+
   return (
     <div
-      id='controls'
+      id={ControlsDivID}
       style={{
         position: 'absolute',
         bottom: 10,
         left: 10,
         backdropFilter: 'blur(20px)',
+        boxShadow: '2px 2px 8px #0008',
+        borderRadius: 4,
         padding: 10,
+        paddingLeft: 20,
+        paddingRight: 20,
         color: 'white',
-        paddingRight: showControls ? 40 : 10,
         userSelect: 'none',
+        width: 'calc(100% - 20px - 20px)',
+        height: 32,
+        display: 'flex',
+        alignItems: 'center',
+        columnGap: 15,
+        fontSize: 14,
       }}
-      onClick={preventDefault}
     >
-      {showControls ? (
-        <>
-          <div
-            style={{
-              position: 'absolute',
-              top: 10,
-              right: 10,
-              cursor: 'pointer',
-            }}
-            onClickCapture={(e) => {
-              e.stopPropagation()
-              setShowControls(false)
-            }}
-          >
-            ✕
-          </div>
-          <div>
-            <button
-              style={{ marginRight: '1em' }}
-              onClick={onGenerateClick}
-              disabled={live}
-            >
-              Generate
-            </button>
-            <button style={{ marginRight: '1em' }} onClick={onRunClick}>
-              {live ? 'Pause' : 'Run'}
-            </button>
-            FPS:
-            <input
-              style={{ marginLeft: '1em', width: '5em' }}
-              type='number'
-              value={fps}
-              onChange={onFpsChange}
-            />
-          </div>
-          <div style={{ marginTop: '1em' }}>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div>Count: {count}</div>
-              <div>Cell Size: {cellSize.toFixed(0)}px</div>
-              <div>
-                Origin: ({Number(offset[0].toFixed(2))},{' '}
-                {Number(offset[1].toFixed(2))})
-              </div>
-            </div>
-          </div>
-          <div style={{ marginTop: 10 }}>
-            Show grid:
-            <select
-              onChange={(e) => {
-                setShowGrid(Number(e.target.value) as GridShowState)
-              }}
-              value={showGrid}
-            >
-              <option value={GridShowState.Auto}>auto</option>
-              <option value={GridShowState.Off}>off</option>
-              <option value={GridShowState.On}>on</option>
-            </select>
-            <button
-              style={{ marginLeft: 10 }}
-              onClick={() => {
-                const fileContent = printRLE(
-                  getBoard(),
-                  boardSize[0],
-                  boardSize[1],
-                )
-
-                const element = document.createElement('a')
-                const file = new Blob([fileContent], { type: 'text/plain' })
-                element.href = URL.createObjectURL(file)
-                element.download = `pattern.rle`
-                document.body.appendChild(element) // Required for this to work in FireFox
-                element.click()
-                document.body.removeChild(element)
-              }}
-            >
-              Save RLE
-            </button>
-          </div>
-        </>
-      ) : (
-        <div onClick={() => setShowControls(true)}>Show Controls</div>
-      )}
+      <img
+        style={{ flexShrink: 0 }}
+        src={`/icons/selection-tool-icon${
+          modeIsSelecting(mode) ? '-selected' : ''
+        }@2x.png`}
+        onClick={onSelectionToolClick}
+        width={24}
+        height={24}
+        title='Marquee Selection (m)'
+      />
+      <img
+        style={{ flexShrink: 0 }}
+        src={`/icons/pencil-tool-icon${
+          modeIsDrawing(mode) ? '-selected' : ''
+        }@2x.png`}
+        onClick={onDrawingToolClick}
+        width={24}
+        height={24}
+        title='Pencil (p)'
+      />
+      <img
+        style={{
+          flexShrink: 0,
+          pointerEvents: 'none',
+          paddingLeft: 5,
+          paddingRight: 5,
+        }}
+        src={`/icons/divider@2x.png`}
+        width={2}
+        height={24}
+      />
+      <img
+        style={{ flexShrink: 0 }}
+        src={`/icons/step-backwards${count === 0 ? '-disabled' : ''}@2x.png`}
+        width={24}
+        height={24}
+        title={count !== 0 ? 'step backwards' : 'step backwards (disabled)'}
+        onClick={onStepBackwardsClick}
+      />
+      <img
+        style={{ flexShrink: 0 }}
+        src={`/icons/${live ? 'pause' : 'play'}@2x.png`}
+        width={24}
+        height={24}
+        title={live ? 'pause' : 'play'}
+        onClick={onRunClick}
+      />
+      <img
+        style={{ flexShrink: 0 }}
+        src={`/icons/generate${live ? '-disabled' : ''}@2x.png`}
+        width={24}
+        height={24}
+        title={live ? 'generate (disabled)' : 'step'}
+        onClick={onGenerateClick}
+      />
+      <div style={{ flexShrink: 0 }}>
+        FPS:
+        <Input
+          type='number'
+          value={fps}
+          onChange={onFpsChange}
+          color='primary'
+          style={{
+            width: '4em',
+            fontSize: 14,
+            paddingLeft: 5,
+          }}
+        />
+      </div>
+      <Slider
+        value={cellSize}
+        onChange={onCellSizeChange}
+        marks={marks}
+        // step={null}
+        min={MinZoom}
+        max={MaxZoom}
+        track={false}
+        // style={{ width: 150 }}
+        scale={sliderScaleFunction}
+      />
+      <div>Cell Size: {cellSize.toFixed(0)}px</div>
+      Show grid:
+      <select onChange={onShowGridChange} value={showGrid}>
+        <option value={GridShowState.Auto}>auto</option>
+        <option value={GridShowState.Off}>off</option>
+        <option value={GridShowState.On}>on</option>
+      </select>
+      <button style={{ marginLeft: 10 }} onClick={onSaveClick}>
+        Save RLE
+      </button>
     </div>
   )
 }
+
+const marks: Array<Mark> = [
+  {
+    value: 0.5,
+    label: '½',
+  },
+  {
+    value: 1,
+    label: 1,
+  },
+  {
+    value: 2,
+    label: 2,
+  },
+  {
+    value: 5,
+    label: 5,
+  },
+  {
+    value: 10,
+    label: 10,
+  },
+  {
+    value: 15,
+    label: 15,
+  },
+  {
+    value: 20,
+    label: 20,
+  },
+  {
+    value: 25,
+    label: 25,
+  },
+]
+
+const ControlsDivID = 'controls'
+
+const sliderScaleFunction = (x: number) => (x < 5 ? x * 2 : x)

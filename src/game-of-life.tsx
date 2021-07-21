@@ -1,7 +1,6 @@
 import { useInterval } from 'beautiful-react-hooks'
 import React from 'react'
 import Dropzone from 'react-dropzone'
-import { Helmet } from 'react-helmet'
 import Recoil from 'recoil'
 import { CanvasInteractions } from './canvas-interactions'
 import { Controls } from './controls'
@@ -9,9 +8,11 @@ import gol from './glsl/gol.frag'
 import grid from './glsl/grid.frag'
 import quad from './glsl/quad.vert'
 import { parseRLEAndUpdateBoard } from './rle-parser'
+import { WebGLDebugUtils } from './scripts/webgl-debug'
 import {
   boardSizeState,
   cellSizeState,
+  countState,
   fpsState,
   liveState,
   modeState,
@@ -74,6 +75,8 @@ export const GameOfLife: React.FunctionComponent = () => {
   const cellSize = Recoil.useRecoilValue(cellSizeState)
   const mode = Recoil.useRecoilValue(modeState)
 
+  const setCount = Recoil.useSetRecoilState(countState)
+
   const [canvasDrawingSize, setCanvasDrawingSize] = React.useState(
     getRenderSize(),
   )
@@ -90,6 +93,9 @@ export const GameOfLife: React.FunctionComponent = () => {
     if (glR.current == null) {
       throw Error('Could not initialize WebGL!')
     }
+    glR.current = WebGLDebugUtils.makeDebugContext(
+      glR.current,
+    ) as WebGLRenderingContext
     const gl = glR.current
 
     programs.current = {
@@ -320,8 +326,11 @@ export const GameOfLife: React.FunctionComponent = () => {
     )
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+
     swap()
-  }, [cellSize, boardSize, swap, viewSize])
+
+    setCount((v) => v + 1)
+  }, [boardSize, viewSize, cellSize, swap, setCount])
 
   /**
    * Render the Game of Life state stored on the GPU.
@@ -419,9 +428,9 @@ export const GameOfLife: React.FunctionComponent = () => {
     [boardSize],
   )
 
-  const step = React.useCallback(() => {
+  const animate = React.useCallback(() => {
     render()
-    frameID.current = window.requestAnimationFrame(step)
+    frameID.current = window.requestAnimationFrame(animate)
   }, [render])
 
   useInterval(() => {
@@ -431,13 +440,13 @@ export const GameOfLife: React.FunctionComponent = () => {
   }, frameLength)
 
   React.useEffect(() => {
-    frameID.current = window.requestAnimationFrame(step)
+    frameID.current = window.requestAnimationFrame(animate)
     return () => {
       if (frameID.current != null) {
         window.cancelAnimationFrame(frameID.current)
       }
     }
-  }, [step])
+  }, [animate])
 
   const onResize = React.useCallback(() => {
     const [newRenderWidth, newRenderHeight] = getRenderSize()
@@ -468,68 +477,57 @@ export const GameOfLife: React.FunctionComponent = () => {
   )
 
   return (
-    <>
-      <Helmet>
-        <style type='text/css'>
-          {`
-            body {
-              margin: 0;
-              overflow: hidden;
-              background-color: black;
-            }
-            iframe {
-              display: none;
-            }
-          `}
-        </style>
-      </Helmet>
+    <CanvasInteractions
+      runGeneration={generate}
+      setBoardState={setBoardState}
+      getCell={getCell}
+      setCell={setCell}
+      getBoardSection={getBoardSection}
+      setEmpty={setEmpty}
+    >
       <Dropzone onDrop={onDrop}>
         {({ getRootProps }) => (
           <div {...getRootProps()} style={{ outline: 'none' }}>
-            <CanvasInteractions
-              runGeneration={generate}
-              setBoardState={setBoardState}
-              getCell={getCell}
-              setCell={setCell}
-              getBoardSection={getBoardSection}
-              setEmpty={setEmpty}
-            >
-              <canvas
-                ref={canvasRef}
+            <canvas
+              id={CanvasId}
+              ref={canvasRef}
+              style={{
+                cursor: modeIsSelecting(mode)
+                  ? `-webkit-image-set(
+                      url(/icons/selection-tool-cursor@2x.png) 2x,
+                      url(/icons/selection-tool-cursor.png) 1x) 12 12, default`
+                  : `-webkit-image-set(
+                          url(/icons/pencil-tool-cursor@2x.png) 2x,
+                          url(/icons/pencil-tool-cursor.png) 1x) 3 18, default`,
+                width: canvasStyleSize[0],
+                height: canvasStyleSize[1],
+              }}
+              width={canvasDrawingSize[0]}
+              height={canvasDrawingSize[1]}
+            />
+            {selection != null &&
+            selectionWidth !== 0 &&
+            selectionHeight !== 0 ? (
+              <div
                 style={{
-                  cursor: modeIsSelecting(mode)
-                    ? 'cell'
-                    : `-webkit-image-set(
-                          url(/icons/pencil@2x.png) 2x,
-                          url(/icons/pencil@1x.png) 1x) 3 18, default`,
-                  width: canvasStyleSize[0],
-                  height: canvasStyleSize[1],
+                  width: selectionWidth * cellSize,
+                  height: selectionHeight * cellSize,
+                  left: (-offset[0] + selection.left) * cellSize,
+                  top: (-offset[1] + selection.top) * cellSize,
+                  pointerEvents: 'none',
+                  backgroundColor: '#0f02',
+                  boxShadow: '0 0 0 0.5px #0f06 inset',
+                  position: 'absolute',
+                  boxSizing: 'border-box',
                 }}
-                width={canvasDrawingSize[0]}
-                height={canvasDrawingSize[1]}
               />
-              {selection != null &&
-              selectionWidth !== 0 &&
-              selectionHeight !== 0 ? (
-                <div
-                  style={{
-                    width: selectionWidth * cellSize,
-                    height: selectionHeight * cellSize,
-                    left: (-offset[0] + selection.left) * cellSize,
-                    top: (-offset[1] + selection.top) * cellSize,
-                    pointerEvents: 'none',
-                    backgroundColor: '#0f02',
-                    boxShadow: '0 0 0 0.5px #0f06 inset',
-                    position: 'absolute',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              ) : null}
-            </CanvasInteractions>
-            <Controls runGeneration={generate} getBoard={getBoard} />
+            ) : null}
+            <Controls generate={generate} getBoard={getBoard} />
           </div>
         )}
       </Dropzone>
-    </>
+    </CanvasInteractions>
   )
 }
+
+export const CanvasId = 'canvas'

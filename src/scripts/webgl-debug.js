@@ -464,14 +464,14 @@ export const WebGLDebugUtils = (function () {
    *
    * @param {!WebGLRenderingContext} ctx The webgl context to
    *        wrap.
-   * @param {!function(err, funcName, args): void} opt_onErrorFunc
+   * @param {!function(err, funcName, args): void} [opt_onErrorFunc]
    *        The function to call when gl.getError returns an
    *        error. If not specified the default function calls
    *        console.log with a message.
-   * @param {!function(funcName, args): void} opt_onFunc The
+   * @param {!function(funcName, args): void} [opt_onFunc] The
    *        function to call when each webgl function is called.
    *        You can use this to log all calls for example.
-   * @param {!WebGLRenderingContext} opt_err_ctx The webgl context
+   * @param {!WebGLRenderingContext} [opt_err_ctx] The webgl context
    *        to call getError on if different than ctx.
    */
   function makeDebugContext(ctx, opt_onErrorFunc, opt_onFunc, opt_err_ctx) {

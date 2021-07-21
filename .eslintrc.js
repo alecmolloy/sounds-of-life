@@ -95,16 +95,7 @@ module.exports = {
     'react/no-did-mount-set-state': 'error',
     'react/no-did-update-set-state': 'error',
     'react/no-access-state-in-setstate': 'error',
-    'react/jsx-no-bind': [
-      'error',
-      {
-        ignoreDOMComponents: true,
-        ignoreRefs: false,
-        allowArrowFunctions: false,
-        allowFunctions: false,
-        allowBind: false,
-      },
-    ],
+    'react/jsx-no-bind': 'error',
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'error',
     // typescript-eslint rules

@@ -1,21 +1,21 @@
 import React from 'react'
 import Recoil from 'recoil'
 import { bresenhamLine } from './bresenham-line'
+import { CanvasId } from './game-of-life'
 import { parseRLEAndUpdateBoard } from './rle-parser'
 import { printRLE } from './rle-printer'
 import {
   boardSizeState,
   cellSizeState,
   countState,
+  fpsState,
   liveState,
   modeState,
   offsetState,
   selectionState,
   showControlsState,
-  fpsState,
 } from './state'
 import {
-  CanvasMode,
   maxFps,
   modeIsDrawing,
   modeIsSelecting,
@@ -37,9 +37,6 @@ interface KeyboardShortcutsProps {
   ) => Uint8Array
   setEmpty: () => void
 }
-
-const MaxZoom = 25
-const MinZoom = 0.5
 
 export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps> =
   ({
@@ -70,105 +67,133 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
 
     const boardSize = Recoil.useRecoilValue(boardSizeState)
 
-    const onKeyDown = (e: React.KeyboardEvent) => {
-      switch (e.code) {
-        case 'MetaLeft':
-        case 'MetaRight':
-        case 'ControlLeft':
-        case 'ControlRight': {
-          setMode('drawing-default')
-          break
-        }
-        case 'KeyC': {
-          if (!e.metaKey && !e.ctrlKey) {
-            setShowControls((v) => !v)
+    const onKeyDown = React.useCallback(
+      (e: React.KeyboardEvent) => {
+        switch (e.code) {
+          case 'KeyM':
+          case 'KeyV': {
+            setMode('selection-default')
+            break
           }
-          break
-        }
-        case 'KeyG':
-        case 'Enter': {
-          if (live) {
-            setLive(false)
+          case 'KeyP': {
+            setMode('drawing-default')
+            break
           }
-          runGeneration()
-          break
-        }
-        case 'KeyR': {
-          setEmpty()
-          setCount(0)
-          break
-        }
-        case 'Space': {
-          setLive((v) => !v)
-          break
-        }
-        case 'Equal': {
-          if (e.metaKey) {
-            e.preventDefault()
-            setCellSize((v) => Math.min(MaxZoom, v * 1.1))
-          } else {
-            setFps((fps) => Math.min(maxFps, Math.round(fps / 1.1)))
+          case 'KeyC': {
+            if (!e.metaKey && !e.ctrlKey) {
+              setShowControls((v) => !v)
+            }
+            break
           }
-          break
-        }
-        case 'Minus': {
-          if (e.metaKey) {
-            e.preventDefault()
-            setCellSize((v) => Math.max(MinZoom, v / 1.1))
-          } else {
-            setFps((fps) => Math.min(maxFps, Math.round(fps * 1.1)))
+          case 'KeyG':
+          case 'Enter': {
+            if (live) {
+              setLive(false)
+            }
+            runGeneration()
+            break
           }
-          break
-        }
-        case 'Digit0':
-        case 'Digit1': {
-          if (e.metaKey) {
-            setCellSize(10)
-            setOffset(new Float32Array([0, 0]))
+          case 'KeyR': {
+            setEmpty()
+            setCount(0)
+            break
           }
-          break
+          case 'Space': {
+            setLive((v) => !v)
+            break
+          }
+          case 'Equal': {
+            if (e.metaKey) {
+              e.preventDefault()
+              const newCellSize = calculateNearestCellSizeStep(cellSize)
+              setOffset((v) =>
+                calculateOffsetForZoom(
+                  window.innerWidth / 2,
+                  window.innerHeight / 2,
+                  v,
+                  cellSize,
+                  newCellSize,
+                ),
+              )
+              setCellSize(newCellSize)
+            } else {
+              setFps((fps) => Math.min(maxFps, Math.round(fps / 1.1)))
+            }
+            break
+          }
+          case 'Minus': {
+            if (e.metaKey) {
+              e.preventDefault()
+              const newCellSize = Math.max(MinZoom, cellSize / 1.1)
+              setOffset((v) =>
+                calculateOffsetForZoom(
+                  window.innerWidth / 2,
+                  window.innerHeight / 2,
+                  v,
+                  cellSize,
+                  newCellSize,
+                ),
+              )
+              setCellSize(newCellSize)
+            } else {
+              setFps((fps) => Math.min(maxFps, Math.round(fps * 1.1)))
+            }
+            break
+          }
+          case 'Digit0':
+          case 'Digit1': {
+            if (e.metaKey) {
+              setCellSize(10)
+              setOffset(new Float32Array([0, 0]))
+            }
+            break
+          }
+          case 'Escape': {
+            setSelection(null)
+            break
+          }
         }
-      }
-    }
-    const onKeyUp = (e: React.KeyboardEvent) => {
-      switch (e.code) {
-        case 'MetaLeft':
-        case 'MetaRight':
-        case 'ControlLeft':
-        case 'ControlRight': {
-          setMode('selection-default')
-          break
-        }
-        case 'Escape': {
-          setSelection(null)
-          break
-        }
-      }
-    }
+      },
+      [
+        cellSize,
+        live,
+        runGeneration,
+        setCellSize,
+        setCount,
+        setEmpty,
+        setFps,
+        setLive,
+        setMode,
+        setOffset,
+        setSelection,
+        setShowControls,
+      ],
+    )
 
     const onMouseDown = React.useCallback(
       (e: React.MouseEvent<HTMLElement>) => {
-        const x = Math.floor(e.clientX / cellSize + offset[0])
-        const y = Math.floor(e.clientY / cellSize + offset[1])
+        if (e.target instanceof HTMLElement && e.target.id === CanvasId) {
+          const x = Math.floor(e.clientX / cellSize + offset[0])
+          const y = Math.floor(e.clientY / cellSize + offset[1])
 
-        const currentValue = getCell(x, y)
-        const newMode = getAndSetNewMode(mode, setMode, e)
-        switch (newMode) {
-          case 'drawing-default': {
-            const newValue = !currentValue
-            setMode(newValue ? 'drawing-insert-cell' : 'drawing-erase')
-            break
+          const currentValue = getCell(x, y)
+          switch (mode) {
+            case 'drawing-default': {
+              const newValue = !currentValue
+              setMode(newValue ? 'drawing-insert-cell' : 'drawing-erase')
+              break
+            }
+            case 'selection-default': {
+              setSelection(selection2D(x, y, x + 1, y + 1, x, y))
+              setMode('selection-selecting')
+              break
+            }
+            default: {
+              console.error(mode)
+            }
           }
-          case 'selection-default': {
-            setSelection(selection2D(x, y, x + 1, y + 1, x, y))
-            setMode('selection-selecting')
-            break
-          }
-          default: {
-            console.error(newMode)
-          }
+          setLastDraggedFramePosition({ x, y })
         }
-        setLastDraggedFramePosition({ x, y })
       },
       [cellSize, offset, getCell, mode, setMode, setSelection],
     )
@@ -181,15 +206,14 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         // TODO: support haypixels
         setMouseX(x)
         setMouseY(y)
-        const newMode = getAndSetNewMode(mode, setMode, e)
-        switch (newMode) {
+        switch (mode) {
           case 'drawing-default':
           case 'selection-default': {
             break
           }
           case 'drawing-erase':
           case 'drawing-insert-cell': {
-            const newValue = newMode === 'drawing-insert-cell'
+            const newValue = mode === 'drawing-insert-cell'
             if (lastDraggedFramePosition != null) {
               bresenhamLine(
                 lastDraggedFramePosition.x,
@@ -237,7 +261,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
             break
           }
           default: {
-            const _exhaustiveCheck: never = newMode
+            const _exhaustiveCheck: never = mode
             throw new Error(`${_exhaustiveCheck} not accounted for`)
           }
         }
@@ -246,7 +270,6 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         cellSize,
         offset,
         mode,
-        setMode,
         lastDraggedFramePosition,
         setCell,
         selection,
@@ -369,7 +392,6 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
       <div
         tabIndex={0}
         onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
         style={{ outline: 'none' }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
@@ -396,29 +418,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
     )
   }
 
-function getAndSetNewMode(
-  mode: CanvasMode,
-  setMode: React.Dispatch<React.SetStateAction<CanvasMode>>,
-  e: React.MouseEvent,
-): CanvasMode {
-  let newMode: CanvasMode = mode
-  if (e.metaKey || e.ctrlKey) {
-    switch (mode) {
-      case 'selection-selecting': {
-        newMode = 'drawing-insert-cell'
-        break
-      }
-      case 'selection-default': {
-        newMode = 'drawing-default'
-        break
-      }
-    }
-  }
-  setMode(newMode)
-  return newMode
-}
-
-function calculateOffsetForZoom(
+export function calculateOffsetForZoom(
   mouseX: number,
   mouseY: number,
   oldOffset: Float32Array,
@@ -432,4 +432,34 @@ function calculateOffsetForZoom(
     x - x / scaleFactor + oldOffset[0],
     y - y / scaleFactor + oldOffset[1],
   ])
+}
+
+export const MaxZoom = 25
+export const MinZoom = 0.5
+
+const ZoomSteps: Array<number> = [
+  0.5, 1, 1.5, 2, 3, 5, 10, 15, 20, 25, 30, 40, 50,
+]
+
+function calculateNearestCellSizeStep(cellSize: number): number {
+  return ZoomSteps[
+    Math.min(
+      ZoomSteps.length - 1,
+      ZoomSteps.reduceRight(
+        (
+          working: [workingDistance: number, index: number],
+          current,
+          i,
+        ): [workingDistance: number, index: number] => {
+          const distance = Math.abs(cellSize - current)
+          if (working[0] > distance) {
+            return [distance, i]
+          } else {
+            return working
+          }
+        },
+        [Infinity, Infinity],
+      )[1] + 1,
+    )
+  ]
 }

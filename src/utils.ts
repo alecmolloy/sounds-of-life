@@ -13,6 +13,10 @@ export const preventDefault = (e: { preventDefault: () => void }): void => {
   e.preventDefault()
 }
 
+export const stopPropagation = (e: { stopPropagation: () => void }): void => {
+  e.stopPropagation()
+}
+
 export function roundToHaypixel(value: number, roundToInt: boolean): number {
   if (roundToInt) {
     return Math.round(value)
@@ -87,6 +91,16 @@ export function modeIsSelecting(
   mode: CanvasMode,
 ): mode is 'selection-selecting' | 'selection-default' {
   return mode === 'selection-selecting' || mode === 'selection-default'
+}
+
+export function modeIsInteracting(
+  mode: CanvasMode,
+): mode is 'selection-selecting' | 'drawing-insert-cell' | 'drawing-erase' {
+  return (
+    mode === 'selection-selecting' ||
+    mode === 'drawing-insert-cell' ||
+    mode === 'drawing-erase'
+  )
 }
 
 export const maxFps = 120

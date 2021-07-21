@@ -28,7 +28,7 @@ export const countState = Recoil.atom({
 
 export const liveState = Recoil.atom({
   key: 'live',
-  default: true,
+  default: false,
 })
 
 export const fpsState = Recoil.atom({
