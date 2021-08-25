@@ -10,9 +10,24 @@ export function createProgram(
   gl.attachShader(program, vertexShader)
   gl.attachShader(program, fragmentShader)
   gl.linkProgram(program)
-  const success: boolean = gl.getProgramParameter(program, gl.LINK_STATUS)
-  if (success) {
-    return program
+  gl.validateProgram(program)
+  const linkStatusSuccess: boolean = gl.getProgramParameter(
+    program,
+    gl.LINK_STATUS,
+  )
+  const validateStatusSuccess: boolean = gl.getProgramParameter(
+    program,
+    gl.VALIDATE_STATUS,
+  )
+  if (linkStatusSuccess) {
+    if (validateStatusSuccess) {
+      return program
+    } else {
+      gl.deleteProgram(program)
+      throw new Error(
+        gl.getProgramInfoLog(program) ?? 'Program did not validate.',
+      )
+    }
   } else {
     gl.deleteProgram(program)
     throw new Error(gl.getProgramInfoLog(program) ?? 'Program did not compile.')
@@ -51,17 +66,11 @@ export function createSimpleProgram(
   vertexShaderSource: string,
   fragmentShaderSource: string,
 ): WebGLProgram {
-  const program = createProgram(
+  return createProgram(
     gl,
     createShader(gl, gl.VERTEX_SHADER, vertexShaderSource),
     createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource),
   )
-  gl.linkProgram(program)
-  if (gl.getProgramParameter(program, gl.LINK_STATUS) !== true) {
-    throw new Error(gl.getProgramInfoLog(program) ?? 'Could not create program')
-  } else {
-    return program
-  }
 }
 
 export const QUAD2 = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])
