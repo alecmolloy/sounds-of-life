@@ -73,4 +73,4 @@ export function createSimpleProgram(
   )
 }
 
-export const QUAD2 = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])
+export const QuadVertices = new Float32Array([-1, -1, -1, 1, 1, -1, 1, 1])

@@ -22,7 +22,7 @@ import {
   viewSizeState,
 } from './state'
 import { getRenderSize, modeIsSelecting } from './utils'
-import { createSimpleProgram, QUAD2 } from './webgl-utils'
+import { createSimpleProgram, QuadVertices } from './webgl-utils'
 
 interface GOLPrograms {
   grid: WebGLProgram
@@ -111,7 +111,7 @@ export const GameOfLife: React.FunctionComponent = () => {
     gl.disable(gl.DEPTH_TEST)
 
     gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, QUAD2, gl.STATIC_DRAW)
+    gl.bufferData(gl.ARRAY_BUFFER, QuadVertices, gl.STATIC_DRAW)
     buffers.current = {
       quad: quadBuffer,
     }
