@@ -104,3 +104,8 @@ export function modeIsInteracting(
 }
 
 export const maxFps = 120
+
+export interface GestureEvent extends MouseEvent {
+  scale: number
+  rotation: number
+}

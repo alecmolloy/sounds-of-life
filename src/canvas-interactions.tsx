@@ -16,6 +16,7 @@ import {
   showControlsState,
 } from './state'
 import {
+  GestureEvent,
   maxFps,
   modeIsDrawing,
   modeIsSelecting,
@@ -50,6 +51,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
   }) => {
     const scrollTimeoutID = React.useRef<number | null>(null)
     const zoomTimeoutID = React.useRef<number | null>(null)
+    const cellSizeAtGestureStart = React.useRef<number | null>(null)
 
     const [cellSize, setCellSize] = Recoil.useRecoilState(cellSizeState)
     const [offset, setOffset] = Recoil.useRecoilState(offsetState)
@@ -284,6 +286,35 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
         setMode('selection-default')
       }
     }, [mode, setMode])
+    const setOffsetAndSnappingZoom = React.useCallback(
+      (newCellSize: number, clientX: number, clientY: number) => {
+        setOffset((v) =>
+          calculateOffsetForZoom(clientX, clientY, v, cellSize, newCellSize),
+        )
+        setCellSize(newCellSize)
+
+        if (zoomTimeoutID.current != null) {
+          clearTimeout(zoomTimeoutID.current)
+        }
+        zoomTimeoutID.current = window.setTimeout(() => {
+          const targetNewCellSize = roundToHaypixel(
+            newCellSize,
+            newCellSize > 1,
+          )
+          setCellSize(targetNewCellSize)
+          setOffset((v) =>
+            calculateOffsetForZoom(
+              clientX,
+              clientY,
+              v,
+              newCellSize,
+              targetNewCellSize,
+            ),
+          )
+        }, 500)
+      },
+      [cellSize, setCellSize, setOffset],
+    )
 
     const onWheel = React.useCallback(
       (e: WheelEvent) => {
@@ -293,30 +324,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
             MaxZoom,
             Math.max(MinZoom, cellSize + (cellSize * -e.deltaY) / 100),
           )
-          setOffset((v) =>
-            calculateOffsetForZoom(e.x, e.y, v, cellSize, newCellSize),
-          )
-          setCellSize(newCellSize)
-
-          if (zoomTimeoutID.current != null) {
-            clearTimeout(zoomTimeoutID.current)
-          }
-          zoomTimeoutID.current = window.setTimeout(() => {
-            const targetNewCellSize = roundToHaypixel(
-              newCellSize,
-              newCellSize > 1,
-            )
-            setCellSize(targetNewCellSize)
-            setOffset((v) =>
-              calculateOffsetForZoom(
-                e.x,
-                e.y,
-                v,
-                newCellSize,
-                targetNewCellSize,
-              ),
-            )
-          }, 500)
+          setOffsetAndSnappingZoom(newCellSize, e.clientX, e.clientY)
         } else {
           setOffset(
             (v) =>
@@ -340,18 +348,53 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
           }, 500)
         }
       },
-      [setCellSize, setOffset, cellSize],
+      [cellSize, setOffsetAndSnappingZoom, setOffset],
     )
+    const onGestureStart = React.useCallback(
+      (e: GestureEvent) => {
+        e.preventDefault()
+        cellSizeAtGestureStart.current = cellSize
+      },
+      [cellSize],
+    ) as (e: Event) => void
+
+    const onGestureChange = React.useCallback(
+      (e: GestureEvent) => {
+        e.preventDefault()
+        if (cellSizeAtGestureStart.current != null) {
+          const newCellSize = Math.min(
+            MaxZoom,
+            Math.max(MinZoom, cellSizeAtGestureStart.current * e.scale),
+          )
+          setOffsetAndSnappingZoom(newCellSize, e.clientX, e.clientY)
+        }
+      },
+      [setOffsetAndSnappingZoom],
+    ) as (e: Event) => void
+
+    const onGestureEnd = React.useCallback((e: GestureEvent) => {
+      e.preventDefault()
+      cellSizeAtGestureStart.current = null
+    }, []) as (e: Event) => void
 
     React.useEffect(() => {
-      document.body.addEventListener('wheel', onWheel, {
+      document.addEventListener('wheel', onWheel, {
         passive: false,
       })
-
-      return () => {
-        document.body.removeEventListener('wheel', onWheel)
+      if (window.GestureEvent != null) {
+        document.addEventListener('gesturestart', onGestureStart)
+        document.addEventListener('gesturechange', onGestureChange)
+        document.addEventListener('gestureend', onGestureEnd)
       }
-    }, [onWheel])
+      return () => {
+        document.removeEventListener('wheel', onWheel)
+        if (window.GestureEvent != null) {
+          document.removeEventListener('gesturestart', onGestureStart)
+          document.removeEventListener('gesturechange', onGestureChange)
+          document.removeEventListener('gestureend', onGestureEnd)
+        }
+      }
+    }, [onWheel, onGestureChange, onGestureStart, onGestureEnd])
 
     const onPaste = React.useCallback(
       () =>
