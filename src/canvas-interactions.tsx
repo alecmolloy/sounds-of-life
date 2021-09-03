@@ -70,7 +70,7 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
     const boardSize = Recoil.useRecoilValue(boardSizeState)
 
     const onKeyDown = React.useCallback(
-      (e: React.KeyboardEvent) => {
+      (e: KeyboardEvent) => {
         switch (e.code) {
           case 'KeyM':
           case 'KeyV': {
@@ -431,10 +431,14 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
       return () => window.removeEventListener('copy', onCopy)
     }, [onCopy])
 
+    React.useEffect(() => {
+      window.addEventListener('keydown', onKeyDown)
+      return () => window.removeEventListener('keydown', onKeyDown)
+    }, [onKeyDown])
+
     return (
       <div
         tabIndex={0}
-        onKeyDown={onKeyDown}
         style={{ outline: 'none' }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
