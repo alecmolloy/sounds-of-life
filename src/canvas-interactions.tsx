@@ -381,14 +381,14 @@ export const CanvasInteractions: React.FunctionComponent<KeyboardShortcutsProps>
       document.addEventListener('wheel', onWheel, {
         passive: false,
       })
-      if (window.GestureEvent != null) {
+      if ((window as any).GestureEvent != null) {
         document.addEventListener('gesturestart', onGestureStart)
         document.addEventListener('gesturechange', onGestureChange)
         document.addEventListener('gestureend', onGestureEnd)
       }
       return () => {
         document.removeEventListener('wheel', onWheel)
-        if (window.GestureEvent != null) {
+        if ((window as any).GestureEvent != null) {
           document.removeEventListener('gesturestart', onGestureStart)
           document.removeEventListener('gesturechange', onGestureChange)
           document.removeEventListener('gestureend', onGestureEnd)
